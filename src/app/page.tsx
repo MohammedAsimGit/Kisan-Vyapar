@@ -1,12 +1,20 @@
+import Link from "next/link";
+import { linkButtonClass } from "@/components/ui";
+
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b border-border">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-6 py-5">
           <span className="text-lg font-semibold tracking-tight">Kisan Vyapar</span>
-          <span className="rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-            Foundation
-          </span>
+          <nav aria-label="Account" className="flex items-center gap-2">
+            <Link href="/auth/login" className={linkButtonClass("ghost", "sm", "hidden sm:inline-flex")}>
+              Sign in
+            </Link>
+            <Link href="/auth/register" className={linkButtonClass("primary", "sm")}>
+              Create account
+            </Link>
+          </nav>
         </div>
       </header>
 
@@ -22,6 +30,14 @@ export default function Home() {
             <span className="font-medium text-foreground">potentially earn the most</span>,
             after the real costs of selling are accounted for.
           </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link href="/auth/register" className={linkButtonClass("primary", "lg")}>
+              Create your account
+            </Link>
+            <Link href="/auth/login" className={linkButtonClass("outline", "lg")}>
+              Sign in
+            </Link>
+          </div>
         </section>
 
         <section className="grid gap-8 py-8 sm:grid-cols-2">
@@ -101,13 +117,12 @@ export default function Home() {
 
         <section className="py-12">
           <div className="rounded-2xl border border-border bg-muted p-6 sm:p-8">
-            <h2 className="text-xl font-semibold tracking-tight">Foundation status</h2>
+            <h2 className="text-xl font-semibold tracking-tight">Where the platform stands</h2>
             <p className="mt-3 max-w-3xl leading-7 text-muted-foreground">
-              This repository currently contains the Sprint 0 foundation: a typed Next.js
-              application architecture, centralized configuration, MongoDB data layer,
-              domain constants, external-service boundaries, and platform documentation.
-              Farmer, vendor, and admin dashboards and their transactional flows are
-              planned for upcoming sprints.
+              You can create a Farmer or Vendor account today, complete your profile,
+              and reach your own protected dashboard. Produce listings, buyer
+              requirements, matching, and orders are planned for the next sprints —
+              nothing is shown here that does not really exist yet.
             </p>
           </div>
         </section>
