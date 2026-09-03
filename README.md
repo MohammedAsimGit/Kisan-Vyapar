@@ -42,6 +42,11 @@ foundation, a real user can now **register** (Farmer or Vendor), **choose a role
 session**, and reach a **protected, role-specific dashboard**. Role areas
 (`/farmer`, `/vendor`, `/admin`) are enforced server-side.
 
+A **premium UI/UX revamp** has been layered over this foundation: a semantic design
+token system (light + dark), refined component library, redesigned landing/auth/
+onboarding/dashboard screens, and honest empty/planned states. See
+[docs/06-UI-UX](docs/06-UI-UX/ui-ux-principles.md) for the design system.
+
 ```text
 Landing → Register → Select Role → Create Profile → Authenticated Session → Role Dashboard
 ```
@@ -58,7 +63,8 @@ future status.
 | Framework | Next.js 16 (App Router) |
 | UI | React 19 |
 | Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 |
+| Styling | Tailwind CSS v4 (semantic tokens) |
+| Icons | lucide-react |
 | Database | MongoDB + Mongoose |
 | Validation | Zod |
 | Password hashing | bcrypt |
