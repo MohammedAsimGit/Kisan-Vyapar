@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Badge, linkButtonClass } from "@/components/ui";
 import { Brand } from "@/components/shared/brand";
+import { LandingHeader } from "@/components/marketing/landing-header";
 
 const HOW_IT_WORKS = [
   {
@@ -86,19 +87,7 @@ export default function Home() {
         <div className="absolute left-[-120px] top-48 h-72 w-72 rounded-full bg-primary/8 blur-3xl" />
       </div>
 
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <Brand />
-          <nav aria-label="Account" className="flex items-center gap-2 sm:gap-3">
-            <Link href="/auth/login" className={linkButtonClass("ghost", "sm", "hidden sm:inline-flex")}>
-              Sign in
-            </Link>
-            <Link href="/auth/register" className={linkButtonClass("primary", "sm")}>
-              Create account
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <LandingHeader />
 
       <main>
         {/* Hero */}
