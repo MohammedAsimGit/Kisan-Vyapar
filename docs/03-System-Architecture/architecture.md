@@ -11,7 +11,7 @@ flowchart TB
     subgraph APP[Next.js Application - App Router]
         UI[React UI - mobile-first]
         API[Route Handlers /api/*]
-        LAYERS[Business Logic / Features]
+        LAYERS[Features / Business Logic]
         SVC[Services]
         VAL[Validation - Zod]
         ERR[Error taxonomy]
@@ -23,7 +23,7 @@ flowchart TB
     LAYERS --> SVC
     SVC --> ERR
 
-    subgraph EXT[External service boundaries - interfaces only in Sprint 0]
+    subgraph EXT[External service boundaries - interfaces only]
         MANDI[Mandi provider]
         MAPS[Maps / distance]
         LOGI[Logistics / transport]
@@ -38,11 +38,19 @@ flowchart TB
     SVC --> DB[(MongoDB)]
 ```
 
-## Product flow
+## Authentication & authorization flow
 
 ```mermaid
 flowchart LR
-    D[Discover] --> M[Match] --> N[Negotiate] --> S[Sell] --> T[Transport] --> TR[Track] --> P[Payment]
+    U[User] -->|register / login| API[/api/auth/]
+    API -->|hash + store| DB[(Users)]
+    API -->|create session| DB[(Sessions)]
+    API -->|HttpOnly cookie| C[Browser]
+    P[/farmer /vendor /admin/] -->|read cookie| G[server layout guard]
+    G -->|verify session + role| DB
+    G -->|allowed| R[Role dashboard]
+    G -->|not signed in| L[/auth/login/]
+    G -->|wrong role| HOME[own dashboard]
 ```
 
 ## Repository layout
@@ -50,45 +58,56 @@ flowchart LR
 ```text
 Kisan-Vyapar/
 ├── src/
-│   ├── app/                 # App Router pages + /api route handlers
-│   ├── components/          # React components (ui, shared, role-scoped)  [future]
-│   ├── features/            # Feature-specific application logic           [future]
-│   ├── lib/                 # Cross-cutting utilities
-│   │   ├── api/             #   response helpers, error wrapper
-│   │   ├── db/              #   Mongo/Mongoose connection utility
-│   │   ├── errors/          #   error taxonomy + safe HTTP envelopes
-│   │   └── validation/      #   shared Zod schemas + parse helper
-│   ├── services/            # External/business service boundaries
-│   │   ├── mandi/ maps/ logistics/ ai/ matching/ realization/
-│   ├── models/              # Mongoose schemas/models
-│   ├── types/               # Shared TypeScript types
-│   ├── constants/           # Centralized domain constants
-│   └── config/              # Centralized server configuration
-├── docs/                    # Documentation set (01–10)
-├── public/
+│   ├── app/                 # Pages + /api route handlers
+│   │   ├── (auth flows)     #   /auth/login, /auth/register, /onboarding
+│   │   ├── farmer|vendor|admin  #   protected role areas
+│   │   └── api/             #   /api/auth/*, /api/profile, /api/health
+│   ├── components/
+│   │   ├── ui/              # reusable design-system primitives
+│   │   ├── auth/            # login/register/logout components
+│   │   ├── profiles/        # farmer/vendor profile forms
+│   │   ├── dashboard/       # role dashboard shell
+│   │   └── shared/          # brand
+│   ├── features/
+│   │   ├── auth/            # schemas, service, session store, guards
+│   │   └── profiles/        # schemas, service, completeness rules
+│   ├── lib/
+│   │   ├── api/             # response/error/request helpers
+│   │   ├── client/          # typed client fetch helper
+│   │   ├── db/              # MongoDB connection
+│   │   ├── errors/          # error taxonomy + safe envelopes
+│   │   ├── utils/           # cn, greeting
+│   │   └── validation/      # shared Zod schemas
+│   ├── services/            # mandi, maps, logistics, ai, matching, realization
+│   ├── models/              # Mongoose models (User, profiles, Session, …)
+│   ├── types/  constants/  config/
+├── docs/                    # documentation set (01–10)
+├── tests/                   # test-only helpers (server-only stub)
 └── ...
 ```
 
-Planned route segments under `src/app` (created when their first page/route lands):
-`(auth)`, `farmer`, `vendor`, `admin`, `api`.
+Future route segments under `src/app` (created when their first page lands):
+`(auth)` grouping is intentionally not used yet; auth pages live at `/auth/*`.
 
 ## Separation of concerns
 
 - **UI** renders and reacts; contains no business logic.
-- **Features** own feature-specific application logic.
-- **Services** own external integrations and business operations.
+- **Features** own feature logic (`features/auth`, `features/profiles`).
+- **Services** own external/business operations.
 - **Models** own Mongo schemas.
-- **Validation** (Zod) guards application boundaries.
-- **Types / constants / config** centralize shared vocabulary.
-- **Route handlers** receive → validate → authorize (later) → call services → respond.
+- **Validation** (Zod) guards boundaries; config validated in `src/config`.
+- **Route handlers** receive → validate → authorize → call services → respond.
+- **Layouts/pages** enforce role access server-side (never client-only).
 
 ## Status summary
 
-- **Implemented:** app shell, config, DB connection, models, constants, types,
-  error/API utilities, `/api/health`, service interfaces, docs.
-- **Planned:** auth, role dashboards, listing/requirement CRUD, matching, offers,
-  orders, market ingestion adapters.
+- **Implemented (Sprint 1):** registration, role selection, bcrypt passwords,
+  DB-backed sessions + logout, session endpoint, farmer/vendor profiles with
+  completion flow, server-enforced role authorization, farmer/vendor/admin
+  dashboard shells, reusable UI kit, responsive layouts, Vitest coverage.
+- **Planned:** produce listings, buyer requirements, matching, offers, orders,
+  market-price ingestion, negotiation.
 - **Future:** payments, logistics execution, AI advisor, multilingual engine,
-  voice, ratings engine.
+  voice, ratings, admin tooling.
 
 No unimplemented system is documented as if it works.

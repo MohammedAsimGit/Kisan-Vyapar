@@ -3,8 +3,9 @@
 ## Status
 
 No deployment has been performed. No hosting account, domain, or CI is wired up.
-This document captures the intended path and the operational rules the codebase
-already follows so deployment is low-risk later.
+**No live MongoDB connection was available during Sprint 1**, so authentication
+and profile flows have not been exercised end-to-end against a real database in
+this environment (unit tests cover the logic; see `docs/09-Testing`).
 
 ## Runtime characteristics (current)
 
@@ -59,9 +60,20 @@ npm run build
 Requires a reachable MongoDB and a matching `MONGODB_URI` in `.env.local` for any
 database-backed feature or for `/api/health` to report `reachable: true`.
 
+## Runtime routes (dynamic)
+
+Protected role areas (`/farmer`, `/vendor`, `/admin`) and `/onboarding` read the
+session cookie and query MongoDB server-side per request; they are dynamic routes.
+`/auth/*` pages and `/` are static/prerendered.
+
 ## Production security posture
 
-Foundations present: server-only env handling, centralized validation, safe error
-responses, secret hygiene, role vocabulary. **Not yet production-secure**: no
-authentication, no authorization enforcement, no rate limiting, no audit logging,
-no secrets manager integration, no TLS termination config. These are later sprints.
+Foundations present (Sprint 1): server-only env handling, centralized validation,
+safe error responses, secret hygiene, bcrypt password hashing (`select: false`),
+DB-backed sessions in HttpOnly/SameSite=Lax cookies with 30-day expiry and
+server-side revocation, server-enforced role authorization.
+
+**Not yet production-secure**: no rate limiting on auth endpoints (required before
+public signups at scale), no audit logging, no secrets-manager integration, no
+TLS termination config, no automated security/penetration review, no
+database-backed auth run in a live environment. These remain for later sprints.

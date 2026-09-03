@@ -28,6 +28,7 @@
 erDiagram
     USER ||--o| FARMER_PROFILE : has
     USER ||--o| VENDOR_PROFILE : has
+    USER ||--o{ SESSION : signs_in
     FARMER_PROFILE ||--o{ PRODUCE_LISTING : lists
     VENDOR_PROFILE ||--o{ BUYER_REQUIREMENT : posts
     VENDOR_PROFILE ||--o{ OFFER : makes
@@ -50,9 +51,22 @@ Role-based identity record.
 | phone | string | required, unique index |
 | email | string | optional, unique sparse index |
 | phoneVerified | bool | default false |
-| passwordHash | string | optional; `select: false` (auth not implemented) |
+| passwordHash | string | optional; `select: false`; set by auth (bcrypt) |
 | language | enum | default `en` |
 | status | enum | `active` / `suspended` |
+
+### Session
+Authentication sessions for signed-in users.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| user | ObjectId → User | required |
+| tokenHash | string | sha-256 of the opaque session token; unique index |
+| expiresAt | date | TTL index (`expireAfterSeconds: 0`) auto-removes expired sessions |
+| createdAt / updatedAt | date | timestamps |
+
+The raw token is stored only in the user's HttpOnly cookie; the database stores a
+hash, so a DB read cannot be used to impersonate a session.
 
 ### FarmerProfile
 One per farmer user (`user` unique).
@@ -163,6 +177,10 @@ Indexes: `(seller, status)`, `(buyer, status)`, `(produceListing, status)`,
 
 ## Status of testing
 
-Model code compiles and lints. **Database behavior (index creation, validation,
-references) has NOT been exercised against a running MongoDB** in this sprint
-because no connection string was available in the environment.
+Unit tests exercise schema-level validation locally (e.g. `user.validation.test.ts`
+validates required/enum/match rules via `doc.validate()` without a database), and
+all code compiles and lints. **A live MongoDB has NOT been available in this
+environment**, so real connection behavior, index creation, unique constraints,
+TTL expiry, and end-to-end auth persistence have NOT been verified against a
+running database. Run the app with a valid `MONGODB_URI` and the `/api/health` +
+auth flows to verify these before relying on them in production.

@@ -36,14 +36,20 @@ Discover → Match → Negotiate → Sell → Transport → Track → Payment
 
 ## Project status
 
-**Sprint 0 — Foundation (current).** This repository today contains the clean,
-typed, documented foundation: application shell, centralized configuration,
-MongoDB data layer, domain constants and types, initial domain models, error/API
-utilities, external-service boundaries, and a documentation set.
+**Sprint 1 — Authentication + roles + profiles (current).** On top of the Sprint 0
+foundation, a real user can now **register** (Farmer or Vendor), **choose a role**,
+**complete their profile**, **sign in and out**, hold a **persistent secure
+session**, and reach a **protected, role-specific dashboard**. Role areas
+(`/farmer`, `/vendor`, `/admin`) are enforced server-side.
 
-Farmer, vendor, and admin dashboards and the transactional flows above are planned
-for upcoming sprints. Nothing in this repository pretends those features exist yet —
-see each `docs/` file for implemented/planned/future status.
+```text
+Landing → Register → Select Role → Create Profile → Authenticated Session → Role Dashboard
+```
+
+Produce listings, buyer requirements, matching, negotiation, and orders are the
+next sprints. Nothing in the UI shows fabricated numbers — unimplemented areas use
+honest empty/"Coming soon" states. See each `docs/` file for implemented/planned/
+future status.
 
 ## Technology
 
@@ -55,10 +61,12 @@ see each `docs/` file for implemented/planned/future status.
 | Styling | Tailwind CSS v4 |
 | Database | MongoDB + Mongoose |
 | Validation | Zod |
+| Password hashing | bcrypt |
+| Auth sessions | DB-backed opaque tokens + HttpOnly cookies |
 | Linting | ESLint (flat config) |
+| Testing | Vitest |
 
-Only technologies actually used are listed. No runtime/validation/test libraries
-are installed speculatively.
+Only technologies actually used are listed.
 
 ## Architecture
 
@@ -66,7 +74,7 @@ are installed speculatively.
 farmer ⇄ Kisan Vyapar ⇄ vendor
 ```
 
-A high-level diagram and the full module map are in
+A high-level diagram, the auth flow, and the full module map are in
 [docs/03-System-Architecture/architecture.md](docs/03-System-Architecture/architecture.md).
 
 Source layout highlights:
@@ -74,11 +82,14 @@ Source layout highlights:
 ```text
 src/
 ├── app/          # App Router pages + /api route handlers
-├── lib/          # api, db, errors, validation utilities
+│                 #   /auth/*, /onboarding, /farmer, /vendor, /admin, /api/*
+├── components/   # ui kit, auth, profiles, dashboard shell, shared
+├── features/     # auth (sessions/guards), profiles
+├── lib/          # api, client, db, errors, utils, validation
 ├── services/     # mandi, maps, logistics, ai, matching, realization boundaries
-├── models/       # Mongoose models (typed)
+├── models/       # Mongoose models (User, profiles, Session, domain models)
 ├── types/        # shared domain types
-├── constants/    # roles, statuses, units, languages
+├── constants/    # roles, statuses, units, languages, auth
 └── config/       # centralized server configuration
 ```
 
@@ -114,6 +125,7 @@ secrets) is tracked.
 npm run dev        # start the development server (http://localhost:3000)
 npm run lint       # ESLint
 npm run typecheck  # tsc --noEmit
+npm run test       # Vitest unit tests
 npm run build      # production build (includes type check)
 npm run start      # run the production build
 ```
@@ -123,6 +135,22 @@ With a configured MongoDB, verify connectivity:
 ```bash
 curl http://localhost:3000/api/health
 ```
+
+### Account flows
+
+Routes (all protected routes require a MongoDB-backed session):
+
+| Route | Purpose |
+| --- | --- |
+| `/auth/register` | create an account and choose Farmer/Vendor |
+| `/auth/login` | sign in with phone/email + password |
+| `/onboarding` | complete the role profile |
+| `/farmer` `/vendor` `/admin` | protected role dashboards |
+
+Known limitation: **no live MongoDB was available during Sprint 1**, so the flows
+above have not been exercised end-to-end against a running database in this
+environment. Set a real `MONGODB_URI`, run `npm run dev`, and use the health +
+auth endpoints to verify locally.
 
 ## Environment variables
 
@@ -148,11 +176,12 @@ implemented.
 - [Testing strategy](docs/09-Testing/testing-strategy.md)
 - [Deployment overview](docs/10-Deployment/deployment-overview.md)
 
-## Roadmap (next)
+## Roadmap
 
-1. Authentication & role-aware dashboards (farmer / vendor / admin).
-2. Produce listings and buyer requirements CRUD.
-3. Market/mandi data ingestion behind the `MandiPriceProvider` boundary.
-4. Smart matching and net-realization estimation.
-5. Offers, negotiation, and order lifecycle.
-6. Trust: ratings, payments, logistics tracking.
+- **Sprint 1 (done):** authentication, role selection, sessions, profiles,
+  protected dashboards, responsive UI, testing.
+- **Sprint 2 (next):** Farmer Produce Management — listing CRUD, honest dashboard
+  data, farmer-side flows.
+- **Sprint 3:** vendor buying requirements + farmer discovery.
+- Later: matching & net realization, offers/negotiation, orders, market/mandi
+  ingestion, payments/logistics, ratings, admin tooling.

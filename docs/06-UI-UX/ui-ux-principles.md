@@ -53,20 +53,43 @@ deliberately restrained; visual identity refinement belongs to a UI sprint.
 
 ## Homepage (implemented)
 
-The current homepage (`src/app/page.tsx`) is a static, honest landing that states
-the problem, the solution, the planned journey, the roles, and the Sprint 0
-foundation status. It links to nothing that does not exist yet.
+The homepage (`src/app/page.tsx`) is a static, honest landing that states the
+problem, solution, planned journey, roles, and current platform status. It links
+to the real sign-in and registration pages.
 
-## Planned information architecture
+## Implemented screens (Sprint 1)
+
+- `/` — landing with account actions.
+- `/auth/register` — progressive two-step registration (details → choose role).
+- `/auth/login` — simple sign-in (phone/email + password, show/hide password).
+- `/onboarding` — role-specific profile completion (farmer or vendor).
+- `/farmer` — protected farmer dashboard shell with honest empty states.
+- `/vendor` — protected vendor dashboard shell with honest empty states.
+- `/admin` — protected admin foundation.
+
+All dashboards use a shared responsive shell (brand header, role-aware scrollable
+nav, avatar + sign out). Planned future items are shown as disabled "Soon" entries —
+never as fake working pages or fabricated numbers.
+
+## Information architecture
 
 ```text
 /                      marketing / landing
-/(auth)/sign-in        sign in (role-aware)                [planned]
-/(auth)/sign-up        registration                        [planned]
-/farmer/...            farmer dashboard, listings, deals   [planned]
-/vendor/...            vendor dashboard, requirements      [planned]
-/admin/...             administration                      [planned]
+/auth/register         registration + role selection      [implemented]
+/auth/login            sign in                            [implemented]
+/onboarding            profile completion                 [implemented]
+/farmer/...            farmer dashboard                   [implemented: /farmer]
+/vendor/...            vendor dashboard                   [implemented: /vendor]
+/admin/...             administration foundation          [implemented: /admin]
 ```
 
-Design tokens, component inventory, and i18n wiring will be built in the UI sprints
-that implement these routes.
+Design tokens, component inventory, and i18n wiring continue to be refined in
+later UI work.
+
+## Responsive requirement
+
+Sprint 1 UI is built mobile-first with fluid Tailwind layouts (`grid`, `flex`,
+responsive prefixes, max-width containers). No JS viewport detection is used.
+Target range: 320px phones → 768/1024 tablets → 1280+ laptops/desktops → large and
+ultrawide displays (max-width containers preserve readable line lengths).
+Horizontal overflow, clipped text, and broken cards are treated as defects.

@@ -20,82 +20,83 @@ statuses change as sprints land.
 
 ## Sprint 0 — Foundation (status: Implemented)
 
+See `docs/03-System-Architecture` for the Sprint 0 record. Sprint 0 delivered the
+Next.js/React/TypeScript/Tailwind foundation, MongoDB + Mongoose data layer,
+centralized configuration and validation, error taxonomy, API utilities,
+external-service boundaries, and the documentation set.
+
+## Sprint 1 — Authentication + roles + profiles + dashboards (status: Implemented)
+
 | Requirement | Status |
 | --- | --- |
-| Next.js (App Router) + React + TypeScript (strict) application | Implemented |
-| Tailwind CSS v4 styling foundation | Implemented |
-| ESLint + typecheck + production build scripts | Implemented |
-| Centralized configuration with server-side env validation (Zod) | Implemented |
-| Server-only guards for secret-adjacent modules | Implemented |
-| MongoDB connection utility (reused, dev hot-reload safe) | Implemented |
-| Mongoose model foundation and registration pattern | Implemented |
-| Centralized domain constants (roles, statuses, units, languages) | Implemented |
-| Domain types (GeoPoint, addresses, location reference) | Implemented |
-| Error taxonomy and safe HTTP error envelopes | Implemented |
-| API foundation utilities (response helpers, error wrapper) | Implemented |
-| `/api/health` route | Implemented |
-| External service boundaries: Mandi, Maps, Logistics, AI, Matching, Realization | Implemented (interfaces/types only) |
-| Documentation set (`docs/`) | Implemented |
-| `.env.example`, `.gitignore`, README | Implemented |
+| User registration (name, phone, optional email, password, role) | Implemented |
+| Farmer / Vendor role selection during registration | Implemented |
+| Password hashing (bcrypt, never stored or returned in plaintext) | Implemented |
+| DB-backed session sign-in (HttpOnly cookie, server-side validation, expiry) | Implemented |
+| Logout (server-side session revoke + cookie clear) | Implemented |
+| Session persistence + current-user retrieval | Implemented |
+| Role-based route protection (farmer / vendor / admin) server-enforced | Implemented |
+| Farmer profile creation + completion flow | Implemented |
+| Vendor profile creation + completion flow | Implemented |
+| Farmer, Vendor, and Admin dashboard shells with honest empty states | Implemented |
+| Reusable UI kit (button, input, card, alert, badge, empty state, …) | Implemented |
+| Responsive behavior across phone → tablet → desktop → large screens | Implemented (see testing) |
+| Vitest unit tests for validation/password/tokens/guards/models/profiles | Implemented (44 tests) |
+| Documentation updates for auth, sessions, authorization, profiles, API, testing | Implemented |
 
-## User roles (Planned — vocabulary implemented)
+### Definition of "account flows that work end-to-end"
 
-- **Farmer** — lists produce, discovers buyers, negotiates, sells.
-- **Vendor** — posts buying requirements, discovers farmers, negotiates, procures.
-- **Admin** — governs the marketplace, monitors integrity and trust.
+- Farmer: register → choose Farmer → create farmer profile → farmer dashboard.
+- Vendor: register → choose Vendor → create vendor profile → vendor dashboard.
+- Returning user: sign in → session restored → role detected → correct dashboard
+  (or profile completion if the profile is missing).
+- Admin: role exists in the auth system and `/admin` is protected; admin accounts
+  are provisioned directly in the database (no public self-serve admin signup).
 
-Role identifiers are centralized in `src/constants/roles.ts`.
+## User roles (vocabulary + enforcement Implemented)
 
-## Farmer journey (Planned)
+- **Farmer** — `/farmer/*` (profile + dashboard implemented).
+- **Vendor** — `/vendor/*` (profile + dashboard implemented).
+- **Admin** — `/admin/*` (protected foundation; admin tooling later).
 
-1. Register / sign in (role = farmer).
-2. Complete farmer profile (identity, location, language).
-3. List produce: crop, variety, quality description, quantity + unit, expected price,
-   images, location, availability.
-4. See relevant market context and buying requirements.
-5. Receive matched buyer opportunities.
-6. Negotiate offers (accept / reject / counter — counter-offers Planned).
-7. Convert to an order; track status through delivery.
-8. Receive payment and rate the counterparty.
+Role identifiers live in `src/constants/roles.ts`; authorization is enforced in
+server layouts and API guards, never only by hiding navigation.
 
-## Vendor journey (Planned)
+## Farmer journey
 
-1. Register / sign in (role = vendor).
-2. Complete vendor profile (business name, type, location).
-3. Post a buying requirement: crop, quantity, quality, max price, required-by date,
-   pickup location.
-4. Discover and shortlist farmers/listings.
-5. Make offers on listings; negotiate (Planned).
-6. Confirm orders; track procurement.
-7. Pay and rate the counterparty.
+- **Implemented:** register, role select, farmer profile, farmer dashboard shell.
+- **Planned:** produce listing CRUD, market context, buyer discovery/matches,
+  negotiation, orders.
+
+## Vendor journey
+
+- **Implemented:** register, role select, vendor profile, vendor dashboard shell.
+- **Planned:** buying requirements, farmer discovery/matches, negotiation, orders.
 
 ## Market price architecture (Planned)
 
-- Ingest market/mandi data from an external source behind a `MandiPriceProvider`
-  boundary (`src/services/mandi`).
-- Normalize provider responses into `MandiPriceRecord` (internal shape).
-- Validate, store/cache, and serve to the application.
-- **No government API is hardcoded or invented.** An adapter for a real,
-  documented source is added in a later sprint once the source is confirmed.
+- Ingest market/mandi data behind a `MandiPriceProvider` boundary.
+- Normalize into `MandiPriceRecord`; validate; store/cache; serve.
+- **No government API is hardcoded or invented.**
 
 ## Smart matching & net realization (Planned)
 
-- Matching considers crop compatibility, quality, quantity, price, distance,
-  availability, buyer demand, reliability (weights centralized and tuned later —
-  see `docs/07-Algorithms`).
-- Net realization = expected selling value − transport cost − applicable costs.
-- No fabricated prices, transport costs, or AI scoring exist in Sprint 0.
+Matching factors and the net-realization concept are designed (see
+`docs/07-Algorithms`). No fabricated scores, prices, or costs exist.
 
 ## Trust, payments, logistics, AI (Future)
 
-- Ratings/reviews, escrow-style payments, live logistics tracking, voice input,
-  and an AI advisor are future work. Service boundaries exist
-  (`src/services/*`) so they can be added cleanly.
+Ratings/reviews, payments, live logistics, voice, and AI advisory remain future
+work behind the `src/services/*` boundaries.
 
 ## Non-functional requirements
 
-- Server-side input validation (Zod) at application boundaries.
-- Role-based authorization foundation (implemented vocabulary; enforcement later).
+- Server-side Zod validation at every application boundary.
+- Password hashing with bcrypt; password hashes are `select: false`.
+- Sessions: random opaque tokens stored hashed (sha-256) in MongoDB; HttpOnly,
+  SameSite=Lax cookie; expiry (30 days) enforced server-side; logout revokes.
+- Role-based authorization server-side.
 - No secrets in source, logs, or client bundles.
 - Safe error responses (no stack traces to users).
-- Consistent commit/push workflow per completed step.
+- Rate limiting on auth endpoints: **deferred** (documented requirement, no extra
+  infrastructure installed in Sprint 1).
