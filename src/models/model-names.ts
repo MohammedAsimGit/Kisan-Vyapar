@@ -7,6 +7,7 @@ export const MODEL_NAMES = {
   MARKET_PRICE: "MarketPrice",
   OFFER: "Offer",
   ORDER: "Order",
+  SESSION: "Session",
 } as const;
 
 export type ModelName = (typeof MODEL_NAMES)[keyof typeof MODEL_NAMES];

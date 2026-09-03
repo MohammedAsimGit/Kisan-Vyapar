@@ -24,3 +24,6 @@ export type { Offer } from "./offer";
 
 export { OrderModel } from "./order";
 export type { Order } from "./order";
+
+export { SessionModel } from "./session";
+export type { Session } from "./session";
