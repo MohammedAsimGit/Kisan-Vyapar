@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { AuthCardContainer, Card } from "@/components/ui";
-import { Brand } from "@/components/shared/brand";
+import { AuthLayout } from "@/components/auth/auth-layout";
 import { RegisterForm } from "@/components/auth/register-form";
 
 export const metadata: Metadata = {
@@ -9,13 +8,10 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <AuthCardContainer>
-      <div className="mb-6 flex justify-center">
-        <Brand />
-      </div>
-      <Card>
+    <AuthLayout>
+      <div className="rounded-3xl border border-border bg-surface p-6 shadow-raised sm:p-8">
         <RegisterForm />
-      </Card>
-    </AuthCardContainer>
+      </div>
+    </AuthLayout>
   );
 }

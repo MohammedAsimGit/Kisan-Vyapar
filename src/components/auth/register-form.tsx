@@ -3,14 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowRight, Store, Wheat } from "lucide-react";
 import { USER_ROLES, type UserRole } from "@/constants/roles";
 import { postJson, ApiRequestError } from "@/lib/client/fetch-json";
-import {
-  Alert,
-  Button,
-  Field,
-  Input,
-} from "@/components/ui";
+import { cn } from "@/lib/utils/cn";
+import { Alert, Button, Field, Input } from "@/components/ui";
 
 interface RegisterPayload {
   fullName: string;
@@ -22,6 +19,7 @@ interface RegisterPayload {
 
 interface RoleOption {
   role: UserRole;
+  icon: typeof Wheat;
   title: string;
   description: string;
 }
@@ -29,13 +27,15 @@ interface RoleOption {
 const ROLE_OPTIONS: RoleOption[] = [
   {
     role: USER_ROLES.FARMER,
-    title: "Farmer",
-    description: "I want to sell my produce.",
+    icon: Wheat,
+    title: "I'm a Farmer",
+    description: "Sell your produce and discover better market opportunities.",
   },
   {
     role: USER_ROLES.VENDOR,
-    title: "Vendor",
-    description: "I want to buy agricultural produce.",
+    icon: Store,
+    title: "I'm a Buyer",
+    description: "Find farmers and source the produce you need.",
   },
 ];
 
@@ -51,6 +51,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,7 +77,7 @@ export function RegisterForm() {
 
   const canContinue = nameOk && phoneOk && passwordOk;
 
-  async function handleRoleChoose(role: UserRole) {
+  async function submitRegistration(role: UserRole) {
     setError(null);
     setSubmitting(true);
 
@@ -103,22 +104,78 @@ export function RegisterForm() {
     }
   }
 
+  const actionLabel = !selectedRole
+    ? "Choose a role to continue"
+    : selectedRole === USER_ROLES.FARMER
+      ? "Create my farmer account"
+      : "Create my buyer account";
+
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
+      {/* Progress */}
+      <ol className="flex items-center gap-1" aria-label="Progress">
+        {[
+          { index: 1, label: "Account" },
+          { index: 2, label: "Role" },
+          { index: 3, label: "Profile" },
+        ].map((item, position) => {
+          const reached = step >= item.index || item.index === 3;
+          const current = step === item.index;
+          return (
+            <li
+              key={item.label}
+              className={cn("flex items-center gap-1", position > 0 && "flex-1")}
+            >
+              {position > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "mx-1 h-px flex-1",
+                    reached ? "bg-primary" : "bg-border",
+                  )}
+                />
+              ) : null}
+              <span
+                aria-current={current ? "step" : undefined}
+                className={cn(
+                  "inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium",
+                  current
+                    ? "text-foreground"
+                    : reached
+                      ? "text-primary"
+                      : "text-muted-foreground",
+                )}
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "inline-flex size-6 items-center justify-center rounded-full text-[11px] font-semibold",
+                    current
+                      ? "bg-primary text-primary-foreground"
+                      : reached
+                        ? "bg-primary-soft text-primary-soft-fg"
+                        : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {item.index}
+                </span>
+                <span className="hidden sm:inline">{item.label}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div className="space-y-1.5">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {step === 1 ? "Create your account" : "How will you use Kisan Vyapar?"}
+        </h1>
         <p className="text-muted-foreground">
           {step === 1
-            ? "Tell us a little about yourself."
-            : "Choose how you will use Kisan Vyapar."}
+            ? "Start with your basic details — you can finish everything else later."
+            : "Pick the side of the market you are on."}
         </p>
       </div>
-
-      <ol className="flex items-center gap-2 text-sm text-muted-foreground" aria-label="Progress">
-        <li className={step === 1 ? "font-semibold text-foreground" : ""}>Your details</li>
-        <li aria-hidden="true">→</li>
-        <li className={step === 2 ? "font-semibold text-foreground" : ""}>Your role</li>
-      </ol>
 
       {error ? (
         <Alert tone="error" title="We couldn't create your account.">
@@ -209,7 +266,7 @@ export function RegisterForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword((value) => !value)}
-                className="absolute inset-y-0 right-2 my-auto flex h-8 items-center rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted"
+                className="absolute inset-y-0 right-2 my-auto flex h-8 items-center rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted"
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
@@ -218,50 +275,101 @@ export function RegisterForm() {
 
           <Button type="submit" size="lg" className="w-full" disabled={!canContinue}>
             Continue
+            <ArrowRight className="size-4" />
           </Button>
         </form>
       ) : (
-        <div className="space-y-3" role="group" aria-label="Choose a role">
-          {ROLE_OPTIONS.map((option) => (
-            <button
-              key={option.role}
-              type="button"
-              disabled={submitting}
-              onClick={() => handleRoleChoose(option.role)}
-              className="flex w-full flex-col items-start gap-1 rounded-2xl border border-border bg-background p-5 text-left transition-colors hover:border-primary hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
-            >
-              <span className="text-lg font-semibold">{option.title}</span>
-              <span className="text-muted-foreground">{option.description}</span>
-            </button>
-          ))}
+        <div className="space-y-4">
+          <div className="grid gap-3" role="group" aria-label="Choose a role">
+            {ROLE_OPTIONS.map((option) => {
+              const selected = selectedRole === option.role;
+              return (
+                <button
+                  key={option.role}
+                  type="button"
+                  aria-pressed={selected}
+                  disabled={submitting}
+                  onClick={() => {
+                    setSelectedRole(option.role);
+                    setError(null);
+                  }}
+                  className={cn(
+                    "group flex w-full items-center gap-4 rounded-2xl border bg-background p-5 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60",
+                    selected
+                      ? "border-primary bg-primary-soft/50 shadow-card"
+                      : "border-border hover:border-primary/60 hover:bg-muted",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "inline-flex size-12 shrink-0 items-center justify-center rounded-2xl transition-colors",
+                      selected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-primary-soft text-primary-soft-fg group-hover:bg-primary/15",
+                    )}
+                  >
+                    <option.icon className="size-6" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-lg font-semibold text-foreground">
+                      {option.title}
+                    </span>
+                    <span className="mt-0.5 block text-sm leading-6 text-muted-foreground">
+                      {option.description}
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "inline-flex size-6 shrink-0 items-center justify-center rounded-full border",
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border-strong",
+                    )}
+                  >
+                    {selected ? (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="size-3.5">
+                        <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-          {submitting ? (
-            <p role="status" className="text-center text-sm text-muted-foreground">
-              Creating your account…
-            </p>
-          ) : (
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-              <Button variant="ghost" onClick={() => setStep(1)}>
-                Back
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setStep(1)}
-              >
-                Change my details
-              </Button>
-            </div>
-          )}
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={!selectedRole}
+            loading={submitting}
+            onClick={() => {
+              if (selectedRole) {
+                void submitRegistration(selectedRole);
+              }
+            }}
+          >
+            {actionLabel}
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            disabled={submitting}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
+          >
+            <ArrowLeft className="size-4" />
+            Back to details
+          </button>
         </div>
       )}
 
-      <p className="text-center text-sm text-muted-foreground">
+      <div className="pt-2 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href="/auth/login" className="font-medium text-primary underline-offset-4 hover:underline">
           Sign in
         </Link>
-      </p>
+      </div>
     </div>
   );
 }
