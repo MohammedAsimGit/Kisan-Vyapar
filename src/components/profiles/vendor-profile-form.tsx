@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { postJson, ApiRequestError } from "@/lib/client/fetch-json";
+import { patchJson, ApiRequestError } from "@/lib/client/fetch-json";
 import {
   Button,
   Field,
@@ -51,7 +51,7 @@ export function VendorProfileForm({
     setError(null);
     setSubmitting(true);
     try {
-      await postJson("/api/profile", {
+      await patchJson("/api/profile", {
         businessName: businessName.trim(),
         businessType,
         city: city.trim(),

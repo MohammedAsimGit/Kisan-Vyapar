@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { postJson, ApiRequestError } from "@/lib/client/fetch-json";
+import { patchJson, ApiRequestError } from "@/lib/client/fetch-json";
 import { Button, Field, Input, Textarea } from "@/components/ui";
 import type { FarmerProfileView } from "@/features/profiles/types";
 
@@ -31,7 +31,7 @@ export function FarmerProfileForm({
     setError(null);
     setSubmitting(true);
     try {
-      await postJson("/api/profile", {
+      await patchJson("/api/profile", {
         bio: bio.trim(),
         village: village.trim(),
         district: district.trim(),
