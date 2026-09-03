@@ -37,6 +37,12 @@ const DASHBOARD_NAV: Record<UserRole, Omit<DashboardNavItem, "active">[]> = {
   ],
 };
 
+const ROLE_LABELS: Record<UserRole, string> = {
+  farmer: "Farmer",
+  vendor: "Buyer",
+  admin: "Admin",
+};
+
 export function DashboardShell({
   user,
   children,
@@ -51,38 +57,43 @@ export function DashboardShell({
   }));
 
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
-        <PageContainer className="flex items-center justify-between gap-3 py-3">
+    <div className="flex min-h-full flex-col bg-background">
+      <header className="sticky top-0 z-30 border-b border-border bg-surface/85 backdrop-blur">
+        <PageContainer wide className="flex items-center justify-between gap-3 py-3">
           <Brand href={home} />
+
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden items-center gap-2 sm:flex">
-              <Avatar name={user.fullName} />
+            <div className="hidden items-center gap-2.5 rounded-full border border-border bg-background py-1 pl-1 pr-3 sm:flex">
+              <Avatar name={user.fullName} className="size-8 text-xs" />
               <div className="leading-tight">
-                <p className="max-w-40 truncate text-sm font-medium">{user.fullName}</p>
-                <p className="text-xs capitalize text-muted-foreground">{user.role}</p>
+                <p className="max-w-44 truncate text-sm font-medium text-foreground">
+                  {user.fullName}
+                </p>
+                <Badge tone="primary" className="mt-0.5 px-1.5 py-0 text-[10px] uppercase tracking-wide">
+                  {ROLE_LABELS[user.role]}
+                </Badge>
               </div>
             </div>
             <LogoutButton />
           </div>
         </PageContainer>
-      </header>
 
-      <div className="border-b border-border bg-background">
-        <PageContainer>
+        <PageContainer wide>
           <nav
             aria-label="Dashboard"
-            className="-mb-px flex gap-1 overflow-x-auto py-2"
+            className="flex items-center gap-1 overflow-x-auto py-2.5 [scrollbar-width:none]"
           >
             {nav.map((item) =>
               item.planned ? (
                 <span
                   key={item.label}
-                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm text-muted-foreground"
+                  className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm text-muted-foreground"
                   aria-disabled="true"
                 >
                   {item.label}
-                  <Badge tone="outline">Soon</Badge>
+                  <Badge tone="outline" className="px-1.5 py-0.5 text-[10px]">
+                    Soon
+                  </Badge>
                 </span>
               ) : (
                 <Link
@@ -90,9 +101,9 @@ export function DashboardShell({
                   href={item.href}
                   aria-current={item.active ? "page" : undefined}
                   className={cn(
-                    "inline-flex shrink-0 items-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    "inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
                     item.active
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
@@ -102,7 +113,7 @@ export function DashboardShell({
             )}
           </nav>
         </PageContainer>
-      </div>
+      </header>
 
       <main className="flex-1 py-8 sm:py-10">
         <PageContainer wide>{children}</PageContainer>
