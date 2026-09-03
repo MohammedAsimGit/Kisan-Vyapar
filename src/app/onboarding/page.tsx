@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AuthCardContainer, Card } from "@/components/ui";
-import { Brand } from "@/components/shared/brand";
+import { Check } from "lucide-react";
+import { AuthLayout } from "@/components/auth/auth-layout";
 import { FarmerProfileForm } from "@/components/profiles/farmer-profile-form";
 import { VendorProfileForm } from "@/components/profiles/vendor-profile-form";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
@@ -27,7 +27,10 @@ export default async function OnboardingPage() {
       redirect(roleHomePath(user.role));
     }
     return (
-      <OnboardingShell heading="Tell us about your farm" subheading="One short step before your farmer dashboard.">
+      <OnboardingShell
+        title="A little about your farm"
+        subtitle="This helps buyers trust who they are buying from. You can change it later."
+      >
         <FarmerProfileForm initial={profile} />
       </OnboardingShell>
     );
@@ -39,7 +42,10 @@ export default async function OnboardingPage() {
       redirect(roleHomePath(user.role));
     }
     return (
-      <OnboardingShell heading="Tell us about your business" subheading="One short step before your vendor dashboard.">
+      <OnboardingShell
+        title="A little about your business"
+        subtitle="This tells farmers who they are selling to. You can change it later."
+      >
         <VendorProfileForm initial={profile} />
       </OnboardingShell>
     );
@@ -49,24 +55,27 @@ export default async function OnboardingPage() {
 }
 
 function OnboardingShell({
-  heading,
-  subheading,
+  title,
+  subtitle,
   children,
 }: {
-  heading: string;
-  subheading: string;
+  title: string;
+  subtitle: string;
   children: React.ReactNode;
 }) {
   return (
-    <AuthCardContainer>
-      <div className="mb-6 flex justify-center">
-        <Brand />
+    <AuthLayout>
+      <div className="rounded-3xl border border-border bg-surface p-6 shadow-raised sm:p-8">
+        <div className="space-y-1.5">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            <Check className="size-3.5" />
+            Last step to your dashboard
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+          <p className="text-muted-foreground">{subtitle}</p>
+        </div>
+        <div className="mt-6">{children}</div>
       </div>
-      <div className="space-y-2 pb-6 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">{heading}</h1>
-        <p className="text-muted-foreground">{subheading}</p>
-      </div>
-      <Card>{children}</Card>
-    </AuthCardContainer>
+    </AuthLayout>
   );
 }

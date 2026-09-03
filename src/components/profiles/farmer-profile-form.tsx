@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { patchJson, ApiRequestError } from "@/lib/client/fetch-json";
-import { Button, Field, Input, Textarea } from "@/components/ui";
+import { Alert, Button, Field, Input, Textarea } from "@/components/ui";
 import type { FarmerProfileView } from "@/features/profiles/types";
 
 export function FarmerProfileForm({
@@ -52,15 +52,10 @@ export function FarmerProfileForm({
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <p className="text-sm leading-6 text-muted-foreground">
-        This helps buyers and the marketplace understand where your produce comes
-        from. You can change this later.
-      </p>
-
       {error ? (
-        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+        <Alert tone="error" title="We couldn't save your profile.">
           {error}
-        </p>
+        </Alert>
       ) : null}
 
       <Field label="Village / town" htmlFor="village">
