@@ -3,9 +3,10 @@
 ## Status
 
 Sprint 1 added **Vitest** (node environment). Currently **8 files / 44 unit tests**
-pass locally via `npm run test`. There are no live-database or browser e2e tests
-yet (see notes below). Anything that later claims coverage must point at real
-tests, not this document.
+pass locally via `npm run test`. In addition, a **manual live-DB verification**
+was run against a development MongoDB (see Known gaps). There are no browser e2e
+tests yet. Anything that later claims coverage must point at real tests, not this
+document.
 
 ## Implemented coverage (Sprint 1)
 
@@ -58,8 +59,12 @@ npm run build       # production build + type pass
 
 ## Known gaps (honest)
 
-- **No live-MongoDB test run** (no connection available) — session expiry via TTL,
-  unique constraints, and actual upserts are unverified at runtime.
+- **No automated database integration tests yet.** A live manual verification was
+  performed against a development MongoDB (farmer and vendor registration, session
+  create/read/revoke, duplicate conflict, profile upsert/read, authed dashboards,
+  logout, login incl. wrong-password rejection), but index creation, unique
+  constraints, and TTL expiry are not asserted automatically. Add
+  `mongodb-memory-server` (or a dev URI) integration tests in a later sprint.
 - **No browser-level responsive/accessibility automation** yet; Sprint 1 UI was
   built mobile-first and manually reviewed across widths, but automated visual
   regression is future work.

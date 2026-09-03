@@ -39,6 +39,9 @@ const ROLE_OPTIONS: RoleOption[] = [
   },
 ];
 
+const PHONE_PATTERN = /^\+?[0-9]{10,15}$/;
+const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).+$/;
+
 export function RegisterForm() {
   const router = useRouter();
 
@@ -51,10 +54,27 @@ export function RegisterForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canContinue =
-    fullName.trim().length >= 2 &&
-    phone.trim().length >= 10 &&
-    password.length >= 8;
+  const nameValue = fullName.trim();
+  const phoneValue = phone.trim();
+  const nameOk = nameValue.length >= 2 && nameValue.length <= 120;
+  const phoneOk = PHONE_PATTERN.test(phoneValue);
+  const passwordOk =
+    password.length >= 8 &&
+    password.length <= 72 &&
+    PASSWORD_PATTERN.test(password);
+
+  const nameError =
+    nameValue.length > 0 && !nameOk ? "Name must be at least 2 characters." : undefined;
+  const phoneError =
+    phoneValue.length > 0 && !phoneOk
+      ? "Enter a valid mobile number with 10 to 15 digits (e.g. 9876543210)."
+      : undefined;
+  const passwordError =
+    password.length > 0 && !passwordOk
+      ? "Use at least 8 characters, with at least one letter and one number."
+      : undefined;
+
+  const canContinue = nameOk && phoneOk && passwordOk;
 
   async function handleRoleChoose(role: UserRole) {
     setError(null);
@@ -115,13 +135,14 @@ export function RegisterForm() {
             setStep(2);
           }}
         >
-          <Field label="Your name" htmlFor="fullName" required>
+          <Field label="Your name" htmlFor="fullName" required error={nameError}>
             <Input
               id="fullName"
               name="fullName"
               autoComplete="name"
               placeholder="e.g. Ramesh Kumar"
               value={fullName}
+              invalid={Boolean(nameError)}
               minLength={2}
               maxLength={120}
               onChange={(event) => setFullName(event.target.value)}
@@ -134,6 +155,7 @@ export function RegisterForm() {
             htmlFor="phone"
             required
             hint="We will use this to recognise your account."
+            error={phoneError}
           >
             <Input
               id="phone"
@@ -143,6 +165,7 @@ export function RegisterForm() {
               autoComplete="tel"
               placeholder="e.g. 9876543210"
               value={phone}
+              invalid={Boolean(phoneError)}
               onChange={(event) => setPhone(event.target.value)}
               required
             />
@@ -166,6 +189,7 @@ export function RegisterForm() {
             htmlFor="password"
             required
             hint="At least 8 characters, with a letter and a number."
+            error={passwordError}
           >
             <div className="relative">
               <Input
@@ -175,6 +199,7 @@ export function RegisterForm() {
                 autoComplete="new-password"
                 placeholder="Create a strong password"
                 value={password}
+                invalid={Boolean(passwordError)}
                 minLength={8}
                 maxLength={72}
                 onChange={(event) => setPassword(event.target.value)}

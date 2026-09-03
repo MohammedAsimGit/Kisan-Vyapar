@@ -147,10 +147,10 @@ Routes (all protected routes require a MongoDB-backed session):
 | `/onboarding` | complete the role profile |
 | `/farmer` `/vendor` `/admin` | protected role dashboards |
 
-Known limitation: **no live MongoDB was available during Sprint 1**, so the flows
-above have not been exercised end-to-end against a running database in this
-environment. Set a real `MONGODB_URI`, run `npm run dev`, and use the health +
-auth endpoints to verify locally.
+Known limitation: authentication and profile flows were verified end-to-end
+against a development MongoDB (register, session, profile, dashboard access,
+logout, login, wrong-password rejection). There are no automated database
+integration tests or browser e2e tests yet — those are planned for a later sprint.
 
 ## Environment variables
 

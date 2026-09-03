@@ -3,9 +3,10 @@
 ## Status
 
 No deployment has been performed. No hosting account, domain, or CI is wired up.
-**No live MongoDB connection was available during Sprint 1**, so authentication
-and profile flows have not been exercised end-to-end against a real database in
-this environment (unit tests cover the logic; see `docs/09-Testing`).
+**Live verification note:** authentication and profile flows were manually verified
+end-to-end against a development MongoDB (register farmer/vendor, session, profile,
+dashboard access, logout, login incl. wrong-password rejection). This is not a
+production deployment or a load test.
 
 ## Runtime characteristics (current)
 

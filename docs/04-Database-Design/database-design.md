@@ -179,8 +179,10 @@ Indexes: `(seller, status)`, `(buyer, status)`, `(produceListing, status)`,
 
 Unit tests exercise schema-level validation locally (e.g. `user.validation.test.ts`
 validates required/enum/match rules via `doc.validate()` without a database), and
-all code compiles and lints. **A live MongoDB has NOT been available in this
-environment**, so real connection behavior, index creation, unique constraints,
-TTL expiry, and end-to-end auth persistence have NOT been verified against a
-running database. Run the app with a valid `MONGODB_URI` and the `/api/health` +
-auth flows to verify these before relying on them in production.
+all code compiles and lints. A **live manual verification was performed against a
+running MongoDB** (development database): registration (farmer and vendor),
+session creation/read/revoke, duplicate-account conflict, profile upsert + read,
+authenticated dashboard access, logout, and login (including a wrong-password
+rejection). Automated database integration tests (real connection or
+`mongodb-memory-server`) are still future work; index creation, unique
+constraints, and TTL expiry were not exhaustively asserted automatically.
