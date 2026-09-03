@@ -14,4 +14,6 @@ export { Label } from "./label";
 export { AuthCardContainer, PageContainer } from "./page-container";
 export { Select } from "./select";
 export type { SelectProps } from "./select";
+export { Textarea } from "./textarea";
+export type { TextareaProps } from "./textarea";
 export { LoadingText, Spinner } from "./spinner";
