@@ -8,6 +8,9 @@ import { parseOrThrow } from "@/lib/validation";
 import { loginSchema, registerSchema } from "./schemas";
 import { hashPassword, verifyPassword } from "./lib/password";
 import { toSessionUser, type SessionUser } from "./types";
+import { phoneVariants } from "@/lib/utils/phone";
+
+const DEBUG_AUTH = process.env.NODE_ENV !== "production";
 
 export async function registerUser(input: unknown): Promise<SessionUser> {
   const data = parseOrThrow(registerSchema, input);
@@ -49,12 +52,29 @@ export async function authenticateUser(input: unknown): Promise<SessionUser> {
 
   await connectToDatabase();
 
-  const user = await UserModel.findOne({
-    $or: [
-      { phone: identifier },
-      ...(looksLikeEmail ? [{ email: identifier.toLowerCase() }] : []),
-    ],
-  }).select("+passwordHash");
+  let filter: { phone: { $in: string[] } } | { email: string };
+  if (looksLikeEmail) {
+    filter = { email: identifier.toLowerCase() };
+  } else {
+    const candidates = phoneVariants(identifier);
+    filter = { phone: { $in: candidates } };
+    if (DEBUG_AUTH) {
+      console.info("[auth] login", {
+        type: "phone",
+        candidateCount: candidates.length,
+        candidates,
+      });
+    }
+  }
+
+  const user = await UserModel.findOne(filter).select("+passwordHash");
+
+  if (DEBUG_AUTH) {
+    console.info("[auth] login", {
+      type: looksLikeEmail ? "email" : "phone",
+      userFound: Boolean(user),
+    });
+  }
 
   if (!user) {
     throw new AuthenticationError("Incorrect phone/email or password.");
@@ -67,6 +87,10 @@ export async function authenticateUser(input: unknown): Promise<SessionUser> {
   const passwordMatches =
     user.passwordHash !== undefined &&
     (await verifyPassword(data.password, user.passwordHash));
+
+  if (DEBUG_AUTH) {
+    console.info("[auth] login", { passwordMatches });
+  }
 
   if (!passwordMatches) {
     throw new AuthenticationError("Incorrect phone/email or password.");
