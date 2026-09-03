@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kisan Vyapar
 
-## Getting Started
+An agricultural marketplace that connects **farmers** and **vendors** to improve
+price discovery and market linkage — and helps farmers find where they can
+**potentially earn the most**, not just where the headline price is highest.
 
-First, run the development server:
+> Premium on the outside. Extremely simple on the inside.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Problem
+
+Farmers often sell at the nearest mandi with limited knowledge of other buyers and
+markets. The headline price of a market is not the farmer's earnings: transport,
+handling, and other costs vary by destination and can erase the benefit of a
+"higher" price. Vendors, meanwhile, struggle to find reliable farmers who can supply
+the quantity, quality, and timing they need.
+
+## Solution
+
+Kisan Vyapar is a two-sided marketplace. Farmers list produce; vendors post buying
+requirements. Both sides discover each other, negotiate with structured offers, and
+convert agreements into trackable orders. Market/mandi data, buyer discovery, and
+matching are designed around **estimated net realization**:
+
+```text
+Estimated Net Realization
+  = Expected Selling Value
+  - Estimated Transportation Cost
+  - Applicable Costs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Core Flow
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+Discover → Match → Negotiate → Sell → Transport → Track → Payment
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project status
 
-## Learn More
+**Sprint 0 — Foundation (current).** This repository today contains the clean,
+typed, documented foundation: application shell, centralized configuration,
+MongoDB data layer, domain constants and types, initial domain models, error/API
+utilities, external-service boundaries, and a documentation set.
 
-To learn more about Next.js, take a look at the following resources:
+Farmer, vendor, and admin dashboards and the transactional flows above are planned
+for upcoming sprints. Nothing in this repository pretends those features exist yet —
+see each `docs/` file for implemented/planned/future status.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Technology
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Layer | Choice |
+| --- | --- |
+| Framework | Next.js 16 (App Router) |
+| UI | React 19 |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS v4 |
+| Database | MongoDB + Mongoose |
+| Validation | Zod |
+| Linting | ESLint (flat config) |
 
-## Deploy on Vercel
+Only technologies actually used are listed. No runtime/validation/test libraries
+are installed speculatively.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Architecture
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+farmer ⇄ Kisan Vyapar ⇄ vendor
+```
+
+A high-level diagram and the full module map are in
+[docs/03-System-Architecture/architecture.md](docs/03-System-Architecture/architecture.md).
+
+Source layout highlights:
+
+```text
+src/
+├── app/          # App Router pages + /api route handlers
+├── lib/          # api, db, errors, validation utilities
+├── services/     # mandi, maps, logistics, ai, matching, realization boundaries
+├── models/       # Mongoose models (typed)
+├── types/        # shared domain types
+├── constants/    # roles, statuses, units, languages
+└── config/       # centralized server configuration
+```
+
+## Development
+
+### Prerequisites
+
+- Node.js 20+ (developed on Node 22)
+- npm
+- MongoDB (local or remote) for database-backed features
+
+### Setup
+
+```bash
+# 1. Clone
+git clone https://github.com/MohammedAsimGit/Kisan-Vyapar.git
+cd Kisan-Vyapar
+
+# 2. Install
+npm install
+
+# 3. Configure environment variables
+cp .env.example .env.local
+# then edit .env.local and set MONGODB_URI (and optionally DATABASE_NAME)
+```
+
+Never commit `.env` or `.env.local`. Only `.env.example` (variable names, no
+secrets) is tracked.
+
+### Commands
+
+```bash
+npm run dev        # start the development server (http://localhost:3000)
+npm run lint       # ESLint
+npm run typecheck  # tsc --noEmit
+npm run build      # production build (includes type check)
+npm run start      # run the production build
+```
+
+With a configured MongoDB, verify connectivity:
+
+```bash
+curl http://localhost:3000/api/health
+```
+
+## Environment variables
+
+| Variable | Used for | Notes |
+| --- | --- | --- |
+| `MONGODB_URI` | MongoDB connection | required for any DB access |
+| `DATABASE_NAME` | Database name | defaults to `kisan-vyapar` |
+
+Environment variables for future integrations (`AUTH_SECRET`, `MANDI_API_URL`,
+`MANDI_API_KEY`, `MAPS_API_KEY`, `AI_API_KEY`) will be added as those features are
+implemented.
+
+## Documentation
+
+- [Problem statement](docs/01-Problem-Statement/problem-statement.md)
+- [Requirements](docs/02-Requirements/requirements.md)
+- [System architecture](docs/03-System-Architecture/architecture.md)
+- [Database design](docs/04-Database-Design/database-design.md)
+- [API architecture](docs/05-API-Documentation/api-architecture.md)
+- [UI/UX principles](docs/06-UI-UX/ui-ux-principles.md)
+- [Algorithm overview](docs/07-Algorithms/algorithm-overview.md)
+- [AI architecture](docs/08-AI/ai-architecture.md)
+- [Testing strategy](docs/09-Testing/testing-strategy.md)
+- [Deployment overview](docs/10-Deployment/deployment-overview.md)
+
+## Roadmap (next)
+
+1. Authentication & role-aware dashboards (farmer / vendor / admin).
+2. Produce listings and buyer requirements CRUD.
+3. Market/mandi data ingestion behind the `MandiPriceProvider` boundary.
+4. Smart matching and net-realization estimation.
+5. Offers, negotiation, and order lifecycle.
+6. Trust: ratings, payments, logistics tracking.
