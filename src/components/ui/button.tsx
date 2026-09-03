@@ -3,21 +3,24 @@ import { cn } from "@/lib/utils/cn";
 import { Spinner } from "./spinner";
 
 const baseClasses =
-  "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60";
+  "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-[color,background-color,border-color,transform,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px disabled:pointer-events-none disabled:opacity-60";
 
-export const buttonVariants: Record<"primary" | "secondary" | "outline" | "ghost" | "danger", string> =
-  {
-    primary: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
-    secondary: "bg-muted text-foreground hover:bg-muted/70",
-    outline: "border border-border bg-background hover:bg-muted",
-    ghost: "hover:bg-muted",
-    danger: "bg-red-600 text-white hover:bg-red-700",
-  };
+export const buttonVariants: Record<
+  "primary" | "secondary" | "outline" | "ghost" | "danger",
+  string
+> = {
+  primary:
+    "bg-primary text-primary-foreground shadow-sm hover:bg-primary-strong",
+  secondary: "bg-surface text-foreground border border-border hover:bg-muted",
+  outline: "border border-border bg-background text-foreground hover:bg-muted",
+  ghost: "text-foreground hover:bg-muted",
+  danger: "bg-danger text-white hover:bg-danger-strong",
+};
 
 export const buttonSizes: Record<"sm" | "md" | "lg", string> = {
-  sm: "h-9 px-3 text-sm",
+  sm: "h-9 px-3.5 text-sm",
   md: "h-11 px-5 text-base",
-  lg: "h-12 px-6 text-base",
+  lg: "h-13 px-7 text-base",
 };
 
 export interface ButtonProps

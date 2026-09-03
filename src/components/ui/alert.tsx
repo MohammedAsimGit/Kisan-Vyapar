@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils/cn";
 
-export type AlertTone = "info" | "success" | "error";
+export type AlertTone = "info" | "success" | "error" | "warning";
 
 const toneClasses: Record<AlertTone, string> = {
-  info: "border-border bg-muted text-foreground",
-  success: "border-emerald-200 bg-emerald-50 text-emerald-900",
-  error: "border-red-200 bg-red-50 text-red-900",
+  info: "border-info-border bg-info-bg text-info-fg",
+  success: "border-success-border bg-success-bg text-success-fg",
+  warning: "border-warning-border bg-warning-bg text-warning-fg",
+  error: "border-danger-border bg-danger-bg text-danger-fg",
 };
 
 export function Alert({
@@ -22,7 +23,11 @@ export function Alert({
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={cn("rounded-xl border px-4 py-3 text-sm leading-6", toneClasses[tone], className)}
+      className={cn(
+        "rounded-xl border px-4 py-3 text-sm leading-6 shadow-inset",
+        toneClasses[tone],
+        className,
+      )}
     >
       {title ? <p className="font-semibold">{title}</p> : null}
       {children}

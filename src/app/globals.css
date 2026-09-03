@@ -1,44 +1,189 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Kisan Vyapar — Semantic design tokens
+   Premium on the outside. Extremely simple on the inside.
+   ============================================================ */
+
 :root {
-  --background: #faf9f7;
-  --foreground: #1c1917;
-  --primary: #166534;
+  color-scheme: light;
+
+  /* Surfaces */
+  --background: #f4f2ec;
+  --foreground: #1d211c;
+  --surface: #ffffff;
+  --surface-muted: #efede5;
+  --border: #e3ded2;
+  --border-strong: #cfc8b8;
+
+  /* Text */
+  --muted-foreground: #5f6a60;
+
+  /* Brand */
+  --primary: #18703b;
+  --primary-strong: #11552d;
+  --primary-soft: #e2f1e7;
+  --primary-soft-fg: #11552d;
   --primary-foreground: #ffffff;
-  --muted: #f1efec;
-  --muted-foreground: #57534e;
-  --border: #e7e5e4;
-  --ring: #166534;
+
+  /* Accent (warm sand) */
+  --accent: #b0761b;
+  --accent-soft: #f7ecd6;
+  --accent-foreground: #52380a;
+
+  /* Feedback */
+  --danger: #c2410c;
+  --danger-strong: #9a3412;
+  --danger-bg: #fdeaec;
+  --danger-fg: #8f1d2c;
+  --danger-border: #f4c2c7;
+
+  --success-bg: #e4f4e9;
+  --success-fg: #166534;
+  --success-border: #bfe3cb;
+
+  --warning-bg: #fbf1df;
+  --warning-fg: #8a5a09;
+  --warning-border: #eed9a8;
+
+  --info-bg: #e6f0fb;
+  --info-fg: #1d4f8a;
+  --info-border: #bcd8f2;
+
+  /* Interaction */
+  --ring: #18703b;
+
+  /* Depth */
+  --shadow-card: 0 1px 2px rgb(40 44 34 / 0.04), 0 10px 30px -18px rgb(40 44 34 / 0.18);
+  --shadow-raised: 0 2px 4px rgb(40 44 34 / 0.05), 0 22px 46px -22px rgb(40 44 34 / 0.28);
+  --shadow-inset: inset 0 1px 0 rgb(255 255 255 / 0.6);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0c0a09;
-    --foreground: #f5f5f4;
-    --primary: #22c55e;
-    --primary-foreground: #052e16;
-    --muted: #1c1917;
-    --muted-foreground: #a8a29e;
-    --border: #292524;
-    --ring: #22c55e;
+    color-scheme: dark;
+
+    --background: #0a0d0b;
+    --foreground: #edf0ea;
+    --surface: #10150f;
+    --surface-muted: #171d16;
+    --border: #222a22;
+    --border-strong: #334034;
+
+    --muted-foreground: #97a397;
+
+    --primary: #3bb971;
+    --primary-strong: #57c985;
+    --primary-soft: #0e2418;
+    --primary-soft-fg: #8fe0af;
+    --primary-foreground: #05210f;
+
+    --accent: #d9a648;
+    --accent-soft: #2b2110;
+    --accent-foreground: #f2d9a6;
+
+    --danger: #ef7a55;
+    --danger-strong: #f59775;
+    --danger-bg: #2a1512;
+    --danger-fg: #f4b0a0;
+    --danger-border: #5c2a22;
+
+    --success-bg: #0e2115;
+    --success-fg: #9adeb2;
+    --success-border: #24523a;
+
+    --warning-bg: #261d0c;
+    --warning-fg: #e6c37a;
+    --warning-border: #54400f;
+
+    --info-bg: #0e1c2c;
+    --info-fg: #9cc6ef;
+    --info-border: #24456b;
+
+    --ring: #3bb971;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 14px 34px -20px rgb(0 0 0 / 0.6);
+    --shadow-raised: 0 2px 4px rgb(0 0 0 / 0.4), 0 26px 60px -26px rgb(0 0 0 / 0.8);
+    --shadow-inset: inset 0 1px 0 rgb(255 255 255 / 0.04);
   }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-muted: var(--surface-muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-fg: var(--primary-soft-fg);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-danger: var(--danger);
+  --color-danger-strong: var(--danger-strong);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-border: var(--danger-border);
+
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--success-fg);
+  --color-success-border: var(--success-border);
+
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-border: var(--warning-border);
+
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+  --color-info-border: var(--info-border);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-inset: var(--shadow-inset);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, Arial, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
+  }
+
+  /* Respect users who prefer reduced motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

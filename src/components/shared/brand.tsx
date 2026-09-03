@@ -1,34 +1,41 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
+import { Sprout } from "lucide-react";
 
 export function Brand({
   className,
   href = "/",
+  tone = "default",
+  markClassName,
 }: {
   className?: string;
   href?: string;
+  tone?: "default" | "light";
+  markClassName?: string;
 }) {
+  const markTone =
+    tone === "light" ? "bg-white/15 text-white" : "bg-primary text-primary-foreground";
+
   return (
     <Link
       href={href}
-      className={cn("inline-flex items-center gap-2", className)}
+      className={cn(
+        "group inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-none",
+        tone === "light"
+          ? "text-white focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+          : "text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        className,
+      )}
     >
       <span
         aria-hidden="true"
-        className="inline-flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground"
+        className={cn(
+          "inline-flex size-9 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 group-hover:-rotate-6",
+          markTone,
+          markClassName,
+        )}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="size-5"
-        >
-          <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-          <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-        </svg>
+        <Sprout className="size-5" strokeWidth={2.1} />
       </span>
       <span className="text-lg font-semibold tracking-tight">Kisan Vyapar</span>
     </Link>

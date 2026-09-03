@@ -16,8 +16,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       type={type}
       aria-invalid={invalid || undefined}
       className={cn(
-        "flex h-11 w-full rounded-xl border bg-background px-4 text-base text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60",
-        invalid ? "border-red-500" : "border-border",
+        "flex h-11 w-full rounded-lg border bg-background px-3.5 text-base text-foreground placeholder:text-muted-foreground shadow-inset transition-[border-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-60",
+        invalid ? "border-danger" : "border-border",
         className,
       )}
       {...props}
