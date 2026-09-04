@@ -12,9 +12,39 @@ const optionalNonEmptyString = z
 const serverEnvSchema = z.object({
   MONGODB_URI: optionalNonEmptyString,
   DATABASE_NAME: optionalNonEmptyString,
+  MARKET_DATA_PROVIDER: optionalNonEmptyString,
+  MARKET_DATA_BASE_URL: optionalNonEmptyString,
+  MARKET_DATA_API_KEY: optionalNonEmptyString,
+  MARKET_DATA_RESOURCE_ID: optionalNonEmptyString,
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
+
+export interface MarketDataConfig {
+  provider?: string;
+  baseUrl?: string;
+  apiKey?: string;
+  resourceId?: string;
+}
+
+export function getMarketDataConfig(): MarketDataConfig {
+  const env = getServerEnv();
+  return {
+    provider: env.MARKET_DATA_PROVIDER,
+    baseUrl: env.MARKET_DATA_BASE_URL,
+    apiKey: env.MARKET_DATA_API_KEY,
+    resourceId: env.MARKET_DATA_RESOURCE_ID,
+  };
+}
+
+export function isMarketDataSourceConfigured(): boolean {
+  const env = getServerEnv();
+  return Boolean(
+    env.MARKET_DATA_PROVIDER &&
+      env.MARKET_DATA_BASE_URL &&
+      env.MARKET_DATA_API_KEY,
+  );
+}
 
 const DEFAULT_DATABASE_NAME = "kisan-vyapar";
 

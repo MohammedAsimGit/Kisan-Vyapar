@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin } from "lucide-react";
+import { ArrowLeft, BarChart3, MapPin } from "lucide-react";
 import { Badge, Card, linkButtonClass } from "@/components/ui";
 import { ProduceActions } from "@/components/produce/produce-actions";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
@@ -99,9 +99,23 @@ export default async function ProduceDetailPage({ params }: RouteContext) {
         </dl>
       </Card>
 
-      <div className="rounded-2xl border border-border bg-primary-soft/50 p-5 text-sm leading-6 text-primary-soft-fg">
-        Market price for this crop isn&apos;t shown yet. It will appear here once
-        price discovery arrives in an upcoming update.
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-primary-soft/50 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold tracking-tight text-primary-soft-fg">
+            Understand today&apos;s market price
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-primary-soft-fg/90">
+            See observed prices for {listing.cropName} in your area — real data,
+            never a guess.
+          </p>
+        </div>
+        <Link
+          href={`/farmer/produce/${listing.id}/prices`}
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-base font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <BarChart3 className="size-4" />
+          View Market Prices
+        </Link>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">

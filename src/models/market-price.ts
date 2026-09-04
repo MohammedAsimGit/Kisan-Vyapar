@@ -9,7 +9,9 @@ import { MODEL_NAMES } from "./model-names";
 
 export interface MarketPrice {
   commodity: string;
+  crop?: string;
   variety?: string;
+  grade?: string;
   market: string;
   district?: string;
   state?: string;
@@ -19,7 +21,9 @@ export interface MarketPrice {
   modalPrice: number;
   currency: Currency;
   arrivalDate?: Date;
-  recordedAt: Date;
+  source?: string;
+  fetchedAt: Date;
+  recordKey?: string;
   externalId?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -31,9 +35,20 @@ const marketPriceSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength: 100,
+      maxlength: 200,
+    },
+    crop: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 60,
     },
     variety: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+    },
+    grade: {
       type: String,
       trim: true,
       maxlength: 100,
@@ -80,10 +95,20 @@ const marketPriceSchema = new Schema(
     arrivalDate: {
       type: Date,
     },
-    recordedAt: {
+    source: {
+      type: String,
+      trim: true,
+      maxlength: 120,
+    },
+    fetchedAt: {
       type: Date,
       required: true,
       default: Date.now,
+    },
+    recordKey: {
+      type: String,
+      trim: true,
+      maxlength: 300,
     },
     externalId: {
       type: String,
@@ -94,8 +119,9 @@ const marketPriceSchema = new Schema(
   { timestamps: true },
 );
 
-marketPriceSchema.index({ commodity: 1, market: 1, recordedAt: -1 });
-marketPriceSchema.index({ state: 1, district: 1, market: 1 });
+marketPriceSchema.index({ crop: 1, state: 1, district: 1, arrivalDate: -1 });
+marketPriceSchema.index({ commodity: 1, state: 1, market: 1, arrivalDate: -1 });
+marketPriceSchema.index({ recordKey: 1 }, { unique: true, sparse: true });
 marketPriceSchema.index({ externalId: 1 }, { unique: true, sparse: true });
 
 export const MarketPriceModel =
