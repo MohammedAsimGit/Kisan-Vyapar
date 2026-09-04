@@ -10,6 +10,7 @@ export const marketPricesQuerySchema = z.object({
     .refine((value) => !value || isSupportedCrop(value), {
       message: "Please provide a supported crop.",
     }),
+  commodity: z.string().trim().min(1).max(200).optional(),
   state: z.string().trim().min(1).max(120).optional(),
   district: z.string().trim().min(1).max(120).optional(),
   market: z.string().trim().min(1).max(200).optional(),

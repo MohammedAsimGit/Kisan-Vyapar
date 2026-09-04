@@ -162,6 +162,13 @@ function PriceCard({
         </span>
       </p>
 
+      {record.expectedNetPrice !== undefined ? (
+        <p className="mt-2 rounded-xl bg-primary-soft px-3 py-2 text-sm text-primary-soft-fg">
+          Net after configured costs: {formatINR(record.expectedNetPrice)} /{" "}
+          {unitLabel}
+        </p>
+      ) : null}
+
       <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
         <div className="rounded-xl bg-muted p-3">
           <dt className="text-muted-foreground">Market range</dt>

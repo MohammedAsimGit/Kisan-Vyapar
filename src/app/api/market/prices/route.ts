@@ -22,6 +22,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     const scope: MarketScope = {
       crop: query.crop,
+      commodity: query.commodity,
       state: query.state,
       district: query.district,
       market: query.market,

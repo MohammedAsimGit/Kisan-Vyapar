@@ -97,7 +97,7 @@ recommended price, net realization, buyer discovery.
 | `GET /api/market/prices` with Zod-validated filters | Implemented |
 | Produce-scoped prices endpoint (ownership enforced) | Implemented |
 | Farmer market-price page + states (fresh/stale/empty/unconfigured) | Implemented |
-| Official source verification (endpoint/fields/rates) | **NOT VERIFIED** — AGMARKNET 2.0 API base/endpoints verified from the official portal, but report endpoints return 403 without authentication and no access was available |
+| Official source verification (endpoint/fields/rates) | **NOT VERIFIED** — provider is data.gov.in (mandi dataset); no key/resource configured locally, so no real response captured |
 | Manual real-data verification | **NOT VERIFIED** — Atlas unreachable at verification time |
 
 **Deferred to Sprint 4:** price recommendation, trend prediction, "best market".
@@ -118,10 +118,9 @@ recommended price, net realization, buyer discovery.
 
 - **Implemented:** provider/client boundary, validation + normalization, cache +
   Mongo persistence (history-safe), crop mapping, price API, farmer UI.
-- **Planned/blocked:** live AGMARKNET 2.0 source verified + enabled (report APIs
-  are Bearer-token protected; no access/credentials were available during the
-  migration).
-- **No fake prices exist; no provider endpoint/field mapping is guessed.**
+- **Planned/blocked:** live data.gov.in resource verified + enabled (requires a
+  valid API key and the Resource ID of the mandi price dataset).
+- **No fake prices exist; no provider field mapping is guessed.**
 
 ## Smart matching & net realization (Planned)
 

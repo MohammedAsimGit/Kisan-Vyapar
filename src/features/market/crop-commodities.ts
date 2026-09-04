@@ -64,3 +64,24 @@ export function getCropName(cropId: string): string | undefined {
 export function isKnownCrop(cropId: string): boolean {
   return CROPS.some((crop) => crop.id === cropId);
 }
+
+export function cropIdForCommodity(commodity: string): string | undefined {
+  const needle = commodity.trim().toLowerCase();
+  if (!needle) {
+    return undefined;
+  }
+  for (const [cropId, names] of Object.entries(CROP_TO_COMMODITIES)) {
+    for (const name of names) {
+      const candidate = name.trim().toLowerCase();
+      if (!candidate) {
+        continue;
+      }
+      // Exact match, or the official commodity starts with the mapped name
+      // (e.g. official "Paddy(Common)" → mapped "Paddy" → rice).
+      if (needle === candidate || (candidate.length >= 4 && needle.startsWith(candidate))) {
+        return cropId;
+      }
+    }
+  }
+  return undefined;
+}

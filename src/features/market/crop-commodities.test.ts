@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cropIdForCommodity,
   getCommoditiesForCrop,
   getMappedCropIds,
   hasCropMapping,
@@ -24,5 +25,12 @@ describe("crop → commodity mapping", () => {
     for (const id of getMappedCropIds()) {
       expect(isKnownCrop(id)).toBe(true);
     }
+  });
+
+  it("infers rice from the official 'Paddy(Common)' commodity", () => {
+    expect(cropIdForCommodity("Paddy(Common)")).toBe("rice");
+    expect(cropIdForCommodity("Tomato")).toBe("tomato");
+    expect(cropIdForCommodity("Potato")).toBe("potato");
+    expect(cropIdForCommodity("Unknown Crop")).toBeUndefined();
   });
 });

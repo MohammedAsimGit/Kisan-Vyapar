@@ -15,6 +15,10 @@ const serverEnvSchema = z.object({
   MARKET_DATA_PROVIDER: optionalNonEmptyString,
   MARKET_DATA_BASE_URL: optionalNonEmptyString,
   MARKET_DATA_API_KEY: optionalNonEmptyString,
+  MARKET_DATA_RESOURCE_ID: optionalNonEmptyString,
+  MARKET_COST_TRANSPORT_PER_QTL: optionalNonEmptyString,
+  MARKET_COST_OTHER_PER_QTL: optionalNonEmptyString,
+  MARKET_COST_COMMISSION_PERCENT: optionalNonEmptyString,
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -23,6 +27,7 @@ export interface MarketDataConfig {
   provider?: string;
   baseUrl?: string;
   apiKey?: string;
+  resourceId?: string;
 }
 
 export function getMarketDataConfig(): MarketDataConfig {
@@ -31,6 +36,7 @@ export function getMarketDataConfig(): MarketDataConfig {
     provider: env.MARKET_DATA_PROVIDER,
     baseUrl: env.MARKET_DATA_BASE_URL,
     apiKey: env.MARKET_DATA_API_KEY,
+    resourceId: env.MARKET_DATA_RESOURCE_ID,
   };
 }
 
@@ -39,8 +45,29 @@ export function isMarketDataSourceConfigured(): boolean {
   return Boolean(
     env.MARKET_DATA_PROVIDER &&
       env.MARKET_DATA_BASE_URL &&
-      env.MARKET_DATA_API_KEY,
+      env.MARKET_DATA_API_KEY &&
+      env.MARKET_DATA_RESOURCE_ID,
   );
+}
+
+export function getMarketCostConfig(): {
+  transportPerQuintal?: number;
+  otherPerQuintal?: number;
+  commissionPercent?: number;
+} {
+  const env = getServerEnv();
+  const toNumber = (value: string | undefined): number | undefined => {
+    if (!value) {
+      return undefined;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+  };
+  return {
+    transportPerQuintal: toNumber(env.MARKET_COST_TRANSPORT_PER_QTL),
+    otherPerQuintal: toNumber(env.MARKET_COST_OTHER_PER_QTL),
+    commissionPercent: toNumber(env.MARKET_COST_COMMISSION_PERCENT),
+  };
 }
 
 const DEFAULT_DATABASE_NAME = "kisan-vyapar";

@@ -31,6 +31,7 @@ export interface MarketPriceView {
   arrivalDate?: string;
   source?: string;
   fetchedAt: string;
+  expectedNetPrice?: number;
 }
 
 export interface MarketPricesResult {
