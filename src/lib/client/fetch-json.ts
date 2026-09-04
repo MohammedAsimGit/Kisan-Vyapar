@@ -124,3 +124,7 @@ export function patchJson<T>(path: string, body: unknown): Promise<T> {
 export function getJson<T>(path: string): Promise<T> {
   return requestJson<T>(path, { method: "GET" });
 }
+
+export function deleteJson<T>(path: string): Promise<T> {
+  return requestJson<T>(path, { method: "DELETE" });
+}
