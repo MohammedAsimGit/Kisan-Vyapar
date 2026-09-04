@@ -68,6 +68,20 @@ function describeError(envelope: ApiEnvelope | undefined): {
     }
   }
 
+  const code = envelope?.error?.code;
+
+  if (
+    code === "DATABASE_ERROR" ||
+    code === "CONFIGURATION_ERROR" ||
+    code === "INTERNAL_ERROR"
+  ) {
+    return {
+      message:
+        "We're having trouble connecting right now. Please check your connection and try again in a moment.",
+      issues,
+    };
+  }
+
   return {
     message:
       envelope?.error?.message ?? "Something went wrong. Please try again.",
