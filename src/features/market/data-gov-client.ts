@@ -39,8 +39,14 @@ export async function fetchDataGovResource(
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const useFilters = attempt === 1;
     try {
-      const response = await fetcher(url.toString(), {
+      const requestUrl = new URL(url.toString());
+      if (useFilters) {
+        addFilters(requestUrl, query);
+      }
+
+      const response = await fetcher(requestUrl.toString(), {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         cache: "no-store",
@@ -69,8 +75,13 @@ export async function fetchDataGovResource(
     } catch (error) {
       const external = toExternalError(error);
       lastError = external;
-      // Retry transient network/provider failures once; never retry on
-      // configuration or clear client errors.
+
+      // A 400 on the first attempt usually means the dataset does not support
+      // `filters[...]` query params — retry without server-side filters.
+      if (useFilters && external.message.includes("rejected (HTTP 400)")) {
+        continue;
+      }
+
       const retriable =
         external.message.includes("timed out") ||
         external.message.includes("temporarily unavailable") ||
@@ -83,6 +94,20 @@ export async function fetchDataGovResource(
   }
 
   throw lastError;
+}
+
+function addFilters(url: URL, query: DataGovQuery): void {
+  const fields: Array<[string, string | undefined]> = [
+    ["state", query.state],
+    ["district", query.district],
+    ["market", query.market],
+    ["commodity", query.commodity],
+  ];
+  for (const [field, value] of fields) {
+    if (value) {
+      url.searchParams.set(`filters[${field}]`, value);
+    }
+  }
 }
 
 function toExternalError(error: unknown): ExternalServiceError {

@@ -33,4 +33,8 @@ describe("crop → commodity mapping", () => {
     expect(cropIdForCommodity("Potato")).toBe("potato");
     expect(cropIdForCommodity("Unknown Crop")).toBeUndefined();
   });
+
+  it("maps the real official Bajra commodity name", () => {
+    expect(cropIdForCommodity("Bajra(Pearl Millet/Cumbu)")).toBe("bajra");
+  });
 });

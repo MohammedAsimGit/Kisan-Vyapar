@@ -47,9 +47,9 @@ function parseDate(value: unknown): Date | undefined {
     return undefined;
   }
   const text = value.trim();
-  // dd-mm-yyyy (common in official mandi exports) — must be handled first so
-  // the generic Date parser never misreads it.
-  const dmy = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(text);
+  // dd-mm-yyyy or dd/mm/yyyy (official mandi exports use dd/mm/yyyy) — handled
+  // first so the generic Date parser never misreads it.
+  const dmy = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(text);
   if (dmy) {
     const [, day, month, year] = dmy;
     const date = new Date(`${year}-${month}-${day}T00:00:00Z`);

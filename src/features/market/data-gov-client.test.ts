@@ -30,6 +30,40 @@ describe("data.gov.in client", () => {
     expect(records).toEqual([{ commodity: "Tomato" }]);
   });
 
+  it("sends filters for state/commodity on the resource request", async () => {
+    let requestedUrl = "";
+    const fetcher = async (input: RequestInfo | URL) => {
+      requestedUrl = String(input);
+      return jsonResponse({ records: [] });
+    };
+    await fetchDataGovResource(
+      config,
+      { state: "Karnataka", commodity: "Tomato" },
+      fetcher,
+    );
+    expect(requestedUrl).toContain("filters%5Bstate%5D=Karnataka");
+    expect(requestedUrl).toContain("filters%5Bcommodity%5D=Tomato");
+  });
+
+  it("falls back to an unfiltered request when filters return 400", async () => {
+    const calls: string[] = [];
+    const fetcher = async (input: RequestInfo | URL) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes("filters%5Bstate%5D")) {
+        return jsonResponse({ message: "bad request" }, 400);
+      }
+      return jsonResponse({ records: [{ commodity: "Tomato" }] });
+    };
+    const records = await fetchDataGovResource(
+      config,
+      { state: "Karnataka" },
+      fetcher,
+    );
+    expect(calls.length).toBe(2);
+    expect(records).toEqual([{ commodity: "Tomato" }]);
+  });
+
   it("maps HTTP 401/403 to a denial error", async () => {
     const fetcher = async () => jsonResponse({ message: "forbidden" }, 403);
     await expect(fetchDataGovResource(config, {}, fetcher)).rejects.toThrow(

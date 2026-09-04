@@ -43,6 +43,16 @@ describe("market normalizer", () => {
     expect(result.value.arrivalDate?.toISOString().slice(0, 10)).toBe("2026-09-04");
   });
 
+  it("parses the official dd/mm/yyyy arrival date", () => {
+    const result = normalizeMarketObservation(
+      { ...validRecord, arrival_date: "04/09/2026" },
+      { defaultUnit: "quintal" },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.arrivalDate?.toISOString().slice(0, 10)).toBe("2026-09-04");
+  });
+
   it("rejects a missing commodity", () => {
     const result = normalizeMarketObservation(
       without(validRecord, "commodity"),
