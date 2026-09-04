@@ -139,3 +139,13 @@ export async function getProfileForRole(
   }
   return null;
 }
+
+export async function getFarmerProfileRecordId(
+  userId: string,
+): Promise<string | null> {
+  await connectToDatabase();
+  const doc = await FarmerProfileModel.findOne({ user: userId })
+    .select({ _id: 1 })
+    .lean();
+  return doc ? String(doc._id) : null;
+}

@@ -10,6 +10,10 @@ import {
   PRODUCE_LISTING_STATUS_VALUES,
   type ProduceListingStatus,
 } from "@/constants/produce-listing-statuses";
+import {
+  QUALITY_GRADE_VALUES,
+  type QualityGrade,
+} from "@/constants/quality-grades";
 import type { GeoPoint, PostalAddress } from "@/types/geo";
 import { locationDefinition } from "./location-definition";
 import { MODEL_NAMES } from "./model-names";
@@ -18,13 +22,13 @@ export interface ProduceListing {
   farmer: Types.ObjectId;
   crop: string;
   variety?: string;
-  quality?: string;
+  quality: QualityGrade;
   quantity: number;
   unit: MeasurementUnit;
-  pricePerUnit: number;
+  pricePerUnit?: number;
   currency: Currency;
   images: string[];
-  availableFrom?: Date;
+  expectedHarvestDate?: Date;
   location?: {
     label?: string;
     geo?: GeoPoint;
@@ -46,7 +50,8 @@ const produceListingSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength: 100,
+      lowercase: true,
+      maxlength: 60,
     },
     variety: {
       type: String,
@@ -55,13 +60,13 @@ const produceListingSchema = new Schema(
     },
     quality: {
       type: String,
-      trim: true,
-      maxlength: 400,
+      enum: QUALITY_GRADE_VALUES,
+      default: "ungraded",
     },
     quantity: {
       type: Number,
       required: true,
-      min: 0,
+      min: 1,
     },
     unit: {
       type: String,
@@ -70,7 +75,6 @@ const produceListingSchema = new Schema(
     },
     pricePerUnit: {
       type: Number,
-      required: true,
       min: 0,
     },
     currency: {
@@ -82,22 +86,21 @@ const produceListingSchema = new Schema(
       type: [String],
       default: [],
     },
-    availableFrom: {
+    expectedHarvestDate: {
       type: Date,
     },
     location: locationDefinition,
     status: {
       type: String,
       enum: PRODUCE_LISTING_STATUS_VALUES,
-      default: PRODUCE_LISTING_STATUS.DRAFT,
+      default: PRODUCE_LISTING_STATUS.ACTIVE,
     },
   },
   { timestamps: true },
 );
 
-produceListingSchema.index({ farmer: 1, status: 1 });
+produceListingSchema.index({ farmer: 1, status: 1, createdAt: -1 });
 produceListingSchema.index({ crop: 1, status: 1 });
-produceListingSchema.index({ status: 1, createdAt: -1 });
 produceListingSchema.index({ "location.geo": "2dsphere" });
 
 export const ProduceListingModel =
