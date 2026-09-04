@@ -5,6 +5,7 @@ import { Avatar, Badge, PageContainer } from "@/components/ui";
 import { Brand } from "@/components/shared/brand";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { DashboardNav } from "./dashboard-nav";
+import { BottomTabNav } from "./bottom-tab-nav";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   farmer: "Farmer",
@@ -20,6 +21,7 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   const home = roleHomePath(user.role);
+  const isFarmer = user.role === "farmer";
 
   return (
     <div className="flex min-h-full flex-col bg-background">
@@ -43,12 +45,15 @@ export function DashboardShell({
           </div>
         </PageContainer>
 
-        <DashboardNav role={user.role} />
+        {!isFarmer ? <DashboardNav role={user.role} /> : null}
       </header>
 
-      <main className="flex-1 py-8 sm:py-10">
+      <main className={isFarmer ? "flex-1 pb-32 pt-8 sm:pb-36 sm:pt-10" : "flex-1 py-8 sm:py-10"}>
         <PageContainer wide>{children}</PageContainer>
       </main>
+
+      {isFarmer ? <BottomTabNav /> : null}
     </div>
   );
 }
+
