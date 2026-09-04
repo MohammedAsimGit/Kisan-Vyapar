@@ -17,6 +17,11 @@ type ListingLocation = NonNullable<
 >;
 
 function toDbLocation(location: ListingLocation) {
+  const geo: { type: "Point"; coordinates: [number, number] } | undefined =
+    location.geo
+      ? { type: "Point", coordinates: location.geo.coordinates }
+      : undefined;
+
   return {
     label: location.label,
     address: {
@@ -25,6 +30,7 @@ function toDbLocation(location: ListingLocation) {
       state: location.address.state,
       pincode: location.address.pincode,
     },
+    ...(geo ? { geo } : {}),
   };
 }
 
@@ -89,6 +95,27 @@ export async function updateProduceListing(
 
   const currentLocation = current.location ?? {};
   const currentAddress = currentLocation.address ?? {};
+  const currentGeo = currentLocation.geo;
+
+  let nextGeo:
+    | { type: "Point"; coordinates: [number, number] }
+    | undefined;
+
+  if (patch.location?.geo) {
+    nextGeo = patch.location.geo;
+  } else if (
+    currentGeo?.type === "Point" &&
+    Array.isArray(currentGeo.coordinates) &&
+    currentGeo.coordinates.length === 2
+  ) {
+    nextGeo = {
+      type: "Point",
+      coordinates: [
+        Number(currentGeo.coordinates[0]),
+        Number(currentGeo.coordinates[1]),
+      ],
+    };
+  }
 
   const next = {
     crop: patch.crop ?? current.crop,
@@ -115,6 +142,7 @@ export async function updateProduceListing(
             ? patch.location.address.pincode
             : currentAddress.pincode,
       },
+      geo: nextGeo,
     },
     expectedHarvestDate:
       patch.expectedHarvestDate !== undefined

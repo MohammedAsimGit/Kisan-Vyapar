@@ -29,6 +29,14 @@ const harvestDateSchema = z
     "Please enter a valid date.",
   );
 
+const geoPointSchema = z.object({
+  type: z.literal("Point"),
+  coordinates: z.tuple([
+    z.number().min(-180, "Longitude must be between -180 and 180.").max(180, "Longitude must be between -180 and 180."),
+    z.number().min(-90, "Latitude must be between -90 and 90.").max(90, "Latitude must be between -90 and 90."),
+  ]),
+});
+
 const locationSchema = z.object({
   label: optionalText(200, "Location name"),
   address: z.object({
@@ -37,6 +45,7 @@ const locationSchema = z.object({
     state: requiredText("state", 120),
     pincode: optionalText(20, "PIN code"),
   }),
+  geo: geoPointSchema.optional(),
 });
 
 export const produceListingSchema = z.object({

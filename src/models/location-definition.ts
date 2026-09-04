@@ -8,11 +8,9 @@ export const locationDefinition = {
     type: {
       type: String,
       enum: ["Point"],
-      default: "Point",
     },
     coordinates: {
       type: [Number],
-      default: undefined,
     },
   },
   address: {

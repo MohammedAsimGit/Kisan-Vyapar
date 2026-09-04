@@ -98,4 +98,73 @@ describe("produce listing schema", () => {
       produceListingUpdateSchema.safeParse({ status: "sold_out" }).success,
     ).toBe(false);
   });
+
+  it("accepts valid explicit geo coordinates", () => {
+    expect(
+      produceListingSchema.safeParse({
+        ...validListing,
+        location: {
+          ...validListing.location,
+          geo: { type: "Point", coordinates: [77.5946, 12.9716] },
+        },
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects a longitude outside [-180, 180]", () => {
+    expect(
+      produceListingSchema.safeParse({
+        ...validListing,
+        location: {
+          ...validListing.location,
+          geo: { type: "Point", coordinates: [200, 12.9716] },
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a latitude outside [-90, 90]", () => {
+    expect(
+      produceListingSchema.safeParse({
+        ...validListing,
+        location: {
+          ...validListing.location,
+          geo: { type: "Point", coordinates: [77.5946, 95] },
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects non-numeric coordinates", () => {
+    expect(
+      produceListingSchema.safeParse({
+        ...validListing,
+        location: {
+          ...validListing.location,
+          geo: { type: "Point", coordinates: ["77.5", 12.9716] },
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an incomplete coordinate pair", () => {
+    expect(
+      produceListingSchema.safeParse({
+        ...validListing,
+        location: {
+          ...validListing.location,
+          geo: { type: "Point", coordinates: [77.5946] },
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a geo point missing coordinates entirely", () => {
+    expect(
+      produceListingSchema.safeParse({
+        ...validListing,
+        location: { ...validListing.location, geo: { type: "Point" } },
+      }).success,
+    ).toBe(false);
+  });
 });
