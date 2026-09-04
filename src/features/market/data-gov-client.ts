@@ -2,8 +2,9 @@ import "server-only";
 import type { MarketDataConfig } from "@/config/env";
 import { ConfigurationError, ExternalServiceError } from "@/lib/errors";
 
-const REQUEST_TIMEOUT_MS = 15_000;
+const REQUEST_TIMEOUT_MS = 20_000;
 const DEFAULT_LIMIT = 1000;
+const MAX_ATTEMPTS = 2;
 
 export interface DataGovQuery {
   commodity?: string;
@@ -35,65 +36,93 @@ export async function fetchDataGovResource(
   url.searchParams.set("format", "json");
   url.searchParams.set("limit", String(query.limit ?? DEFAULT_LIMIT));
 
-  let response: Response;
-  try {
-    response = await fetcher(url.toString(), {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      cache: "no-store",
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    if (message.toLowerCase().includes("timeout") || error instanceof DOMException) {
-      throw new ExternalServiceError("The market-data provider timed out.", {
-        cause: error,
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetcher(url.toString(), {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        cache: "no-store",
       });
+
+      if (!response.ok) {
+        throw mapHttpError(response.status);
+      }
+
+      let payload: DataGovEnvelope | null = null;
+      try {
+        payload = (await response.json()) as DataGovEnvelope;
+      } catch {
+        throw new ExternalServiceError(
+          "The market-data provider returned invalid JSON.",
+        );
+      }
+
+      if (!Array.isArray(payload?.records)) {
+        throw new ExternalServiceError(
+          "The market-data provider returned an unexpected response shape.",
+        );
+      }
+
+      return payload.records;
+    } catch (error) {
+      const external = toExternalError(error);
+      lastError = external;
+      // Retry transient network/provider failures once; never retry on
+      // configuration or clear client errors.
+      const retriable =
+        external.message.includes("timed out") ||
+        external.message.includes("temporarily unavailable") ||
+        external.message.includes("Could not reach");
+      if (!retriable || attempt === MAX_ATTEMPTS) {
+        throw external;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
     }
-    throw new ExternalServiceError("Could not reach the market-data provider.", {
+  }
+
+  throw lastError;
+}
+
+function toExternalError(error: unknown): ExternalServiceError {
+  if (error instanceof ExternalServiceError) {
+    return error;
+  }
+  const message = error instanceof Error ? error.message : "";
+  if (message.toLowerCase().includes("timeout") || error instanceof DOMException) {
+    return new ExternalServiceError("The market-data provider timed out.", {
       cause: error,
     });
   }
-
-  if (!response.ok) {
-    throw mapHttpError(response.status);
-  }
-
-  let payload: DataGovEnvelope | null = null;
-  try {
-    payload = (await response.json()) as DataGovEnvelope;
-  } catch {
-    throw new ExternalServiceError("The market-data provider returned invalid JSON.");
-  }
-
-  if (!Array.isArray(payload?.records)) {
-    throw new ExternalServiceError(
-      "The market-data provider returned an unexpected response shape.",
-    );
-  }
-
-  return payload.records;
+  return new ExternalServiceError("Could not reach the market-data provider.", {
+    cause: error,
+  });
 }
 
 function mapHttpError(status: number): ExternalServiceError {
+  const code = `HTTP ${status}`;
   switch (status) {
     case 400:
-      return new ExternalServiceError("The market-data request was rejected.");
+      return new ExternalServiceError(
+        `The market-data request was rejected (${code}).`,
+      );
     case 401:
     case 403:
       return new ExternalServiceError(
-        "Market-data access was denied. Check the API key configuration.",
+        `Market-data access was denied (${code}). Check the API key configuration.`,
       );
     case 404:
       return new ExternalServiceError(
-        "The market-data resource was not found. Check MARKET_DATA_RESOURCE_ID.",
+        `The market-data resource was not found (${code}). Check MARKET_DATA_RESOURCE_ID.`,
       );
     case 429:
       return new ExternalServiceError(
-        "The market-data provider rate limit was reached.",
+        `The market-data provider rate limit was reached (${code}).`,
       );
     default:
       return new ExternalServiceError(
-        "The market-data provider is temporarily unavailable.",
+        `The market-data provider is temporarily unavailable (${code}).`,
       );
   }
 }
