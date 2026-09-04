@@ -21,7 +21,7 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   const home = roleHomePath(user.role);
-  const isFarmer = user.role === "farmer";
+  const hasBottomNav = user.role === "farmer" || user.role === "vendor";
 
   return (
     <div className="flex min-h-full flex-col bg-background">
@@ -45,14 +45,22 @@ export function DashboardShell({
           </div>
         </PageContainer>
 
-        {!isFarmer ? <DashboardNav role={user.role} /> : null}
+        {!hasBottomNav ? <DashboardNav role={user.role} /> : null}
       </header>
 
-      <main className={isFarmer ? "flex-1 pb-32 pt-8 sm:pb-36 sm:pt-10" : "flex-1 py-8 sm:py-10"}>
+      <main
+        className={
+          hasBottomNav
+            ? "flex-1 pb-32 pt-8 sm:pb-36 sm:pt-10"
+            : "flex-1 py-8 sm:py-10"
+        }
+      >
         <PageContainer wide>{children}</PageContainer>
       </main>
 
-      {isFarmer ? <BottomTabNav /> : null}
+      {hasBottomNav ? (
+        <BottomTabNav role={user.role as "farmer" | "vendor"} />
+      ) : null}
     </div>
   );
 }

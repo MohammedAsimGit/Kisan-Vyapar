@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Home, Sprout, Users } from "lucide-react";
+import {
+  ClipboardList,
+  Home,
+  Package,
+  Sprout,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 interface BottomTab {
@@ -13,16 +19,25 @@ interface BottomTab {
   planned?: boolean;
 }
 
-const FARMER_TABS: BottomTab[] = [
-  { label: "Home", href: "/farmer", icon: Home },
-  { label: "My Produce", href: "/farmer/produce", icon: Sprout },
-  { label: "Buyers", icon: Users, planned: true },
-  { label: "Orders", icon: ClipboardList, planned: true },
-];
+const ROLE_TABS: Record<"farmer" | "vendor", BottomTab[]> = {
+  farmer: [
+    { label: "Home", href: "/farmer", icon: Home },
+    { label: "My Produce", href: "/farmer/produce", icon: Sprout },
+    { label: "Buyers", icon: Users, planned: true },
+    { label: "Orders", icon: ClipboardList, planned: true },
+  ],
+  vendor: [
+    { label: "Home", href: "/vendor", icon: Home },
+    { label: "Requirements", icon: ClipboardList, planned: true },
+    { label: "Farmers", icon: Users, planned: true },
+    { label: "Orders", icon: Package, planned: true },
+  ],
+};
 
-export function BottomTabNav() {
+export function BottomTabNav({ role }: { role: "farmer" | "vendor" }) {
   const pathname = usePathname();
   const [toast, setToast] = useState<string | null>(null);
+  const tabs = ROLE_TABS[role];
 
   useEffect(() => {
     if (!toast) {
@@ -48,10 +63,10 @@ export function BottomTabNav() {
       ) : null}
 
       <div className="mx-auto grid w-full max-w-lg grid-cols-4">
-        {FARMER_TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive = Boolean(
             tab.href &&
-              (tab.href === "/farmer"
+              (tab.href === roleHomePath(role)
                 ? pathname === tab.href
                 : pathname === tab.href || pathname.startsWith(`${tab.href}/`)),
           );
@@ -110,4 +125,8 @@ export function BottomTabNav() {
       </div>
     </nav>
   );
+}
+
+function roleHomePath(role: "farmer" | "vendor"): string {
+  return `/${role}`;
 }
