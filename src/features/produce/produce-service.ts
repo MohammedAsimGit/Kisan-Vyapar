@@ -187,6 +187,20 @@ export async function updateProduceListing(
   return updated ? toProduceListingView(updated) : null;
 }
 
+export async function setProduceAskingPrice(
+  listingId: string,
+  farmerProfileId: string,
+  pricePerUnit: number,
+): Promise<number | null> {
+  await connectToDatabase();
+  const updated = await ProduceListingModel.findOneAndUpdate(
+    { _id: listingId, farmer: farmerProfileId },
+    { $set: { pricePerUnit } },
+    { new: true },
+  ).lean();
+  return updated ? Number(updated.pricePerUnit) : null;
+}
+
 export async function deleteProduceListing(
   listingId: string,
   farmerProfileId: string,

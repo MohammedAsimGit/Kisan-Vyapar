@@ -31,6 +31,7 @@ export interface ProduceListingView {
   location: ProduceLocationView;
   locationText: string;
   expectedHarvestDate?: string;
+  askingPrice?: number;
   status: ProduceListingStatus;
   createdAt: string;
   updatedAt: string;
@@ -44,6 +45,7 @@ type ListingDocShape = {
   quantity: number;
   unit: MeasurementUnit;
   expectedHarvestDate?: Date | null;
+  pricePerUnit?: number | null;
   location?: {
     label?: string;
     address?: {
@@ -104,6 +106,10 @@ export function toProduceListingView(doc: ListingDocShape): ProduceListingView {
     },
     locationText: produceLocationText(doc.location),
     expectedHarvestDate: toDateOnly(doc.expectedHarvestDate),
+    askingPrice:
+      doc.pricePerUnit !== undefined && doc.pricePerUnit !== null
+        ? doc.pricePerUnit
+        : undefined,
     status: doc.status,
     createdAt: doc.createdAt ? doc.createdAt.toISOString() : "",
     updatedAt: doc.updatedAt ? doc.updatedAt.toISOString() : "",

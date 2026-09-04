@@ -49,6 +49,14 @@ export default async function ProduceDetailPage({ params }: RouteContext) {
         ? formatDate(listing.expectedHarvestDate)
         : "Not set",
     },
+    ...(listing.askingPrice !== undefined
+      ? [
+          {
+            label: "Your asking price",
+            value: `₹${formatPlain(listing.askingPrice)} / ${listing.unitLabel}`,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -105,8 +113,8 @@ export default async function ProduceDetailPage({ params }: RouteContext) {
             Understand today&apos;s market price
           </h2>
           <p className="mt-1 text-sm leading-6 text-primary-soft-fg/90">
-            See observed prices for {listing.cropName} in your area — real data,
-            never a guess.
+            See observed mandi prices for {listing.cropName} and price guidance for
+            your asking price.
           </p>
         </div>
         <Link
@@ -114,7 +122,7 @@ export default async function ProduceDetailPage({ params }: RouteContext) {
           className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-base font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <BarChart3 className="size-4" />
-          View Market Prices
+          View Market Intelligence
         </Link>
       </div>
 
@@ -142,4 +150,10 @@ function formatDate(dateOnly: string): string {
     year: "numeric",
     timeZone: "UTC",
   });
+}
+
+function formatPlain(value: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+  }).format(value);
 }

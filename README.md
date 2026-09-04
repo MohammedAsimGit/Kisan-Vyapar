@@ -194,6 +194,7 @@ implemented.
 - [API architecture](docs/05-API-Documentation/api-architecture.md)
 - [UI/UX principles](docs/06-UI-UX/ui-ux-principles.md)
 - [Algorithm overview](docs/07-Algorithms/algorithm-overview.md)
+- [Price guidance methodology](docs/07-Algorithms/pricing-guidance.md)
 - [AI architecture](docs/08-AI/ai-architecture.md)
 - [Testing strategy](docs/09-Testing/testing-strategy.md)
 - [Deployment overview](docs/10-Deployment/deployment-overview.md)
@@ -210,7 +211,10 @@ implemented.
   cache/freshness, price API, farmer price UI, optional net-price cost model.
   **data.gov.in** provider implemented but live response still pending
   verification (no key/resource configured locally).
-- **Sprint 4 (next):** enable/verify the official source, then price
-  recommendation & trend on real observations.
-- Later: matching & net realization, offers/negotiation, orders, market/mandi
-  ingestion, payments/logistics, ratings, admin tooling.
+- **Sprint 4 (done):** Price Guidance — deterministic recommendation engine
+  (median baseline, trend, volatility, confidence, data sufficiency, suggested
+  range) over real data.gov.in observations; farmer can use the suggestion or set
+  their own asking price; market-price screen redesigned as a compact Market
+  Intelligence view (Snapshot → Guidance → Trend → compact market rows).
+- **Next:** vendor buying requirements + farmer discovery; matching & net
+  realization; offers/negotiation; orders.
