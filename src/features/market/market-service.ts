@@ -4,10 +4,7 @@ import {
   getMarketDataConfig,
   isMarketDataSourceConfigured,
 } from "@/config/env";
-import {
-  isMarketDataFresh,
-  MARKET_DATA_SOURCE_LABEL,
-} from "./config";
+import { MARKET_DATA_SOURCE_LABEL } from "./config";
 import {
   getMarketPricesForScope,
   persistMarketObservations,
@@ -34,19 +31,6 @@ function scopeLabel(scope: MarketScope): string | undefined {
     parts.push(scope.state);
   }
   return parts.length > 0 ? parts.join(", ") : undefined;
-}
-
-function attachNetPrice(
-  records: MarketPricesResult["records"],
-  costs: MarketCostConfig,
-): MarketPricesResult["records"] {
-  if (!hasCostConfig(costs)) {
-    return records;
-  }
-  return records.map((record) => ({
-    ...record,
-    expectedNetPrice: expectedNetPrice(record.modalPrice, costs),
-  }));
 }
 
 function matchesText(value: string | undefined, term: string | undefined): boolean {
@@ -85,8 +69,6 @@ async function refreshFromProvider(scope: MarketScope): Promise<number> {
 
     const observation = result.value;
 
-    // Local filtering until the OGD field names are verified for server-side
-    // filters.
     if (!matchesText(observation.commodity, scope.commodity)) {
       continue;
     }
@@ -112,6 +94,7 @@ async function refreshFromProvider(scope: MarketScope): Promise<number> {
 
   console.info("[market] provider refresh", {
     provider: "data.gov.in",
+    scope: { state: scope.state, district: scope.district, commodity: scope.commodity },
     received: rawRecords.length,
     normalized,
     rejected,
@@ -124,27 +107,22 @@ async function refreshFromProvider(scope: MarketScope): Promise<number> {
   return normalized;
 }
 
-export async function getMarketPrices(
-  scope: MarketScope,
-): Promise<MarketPricesResult> {
+async function loadForScope(scope: MarketScope): Promise<{
+  records: MarketPricesResult["records"];
+  newestFetchedAt: Date | null;
+}> {
   let { records, newestFetchedAt } = await getMarketPricesForScope(scope);
-
-  const label = scopeLabel(scope);
-  const costs = getMarketCostConfig();
 
   const shouldRefresh =
     isMarketDataSourceConfigured() &&
-    (records.length === 0 || !isMarketDataFresh(newestFetchedAt));
+    (records.length === 0 || !isFresh(newestFetchedAt));
 
   if (shouldRefresh) {
     try {
-      const normalizedCount = await refreshFromProvider(scope);
+      await refreshFromProvider(scope);
       const refreshed = await getMarketPricesForScope(scope);
       records = refreshed.records;
       newestFetchedAt = refreshed.newestFetchedAt;
-      if (normalizedCount === 0 && records.length > 0) {
-        newestFetchedAt = null;
-      }
     } catch (error) {
       console.info("[market] provider refresh failed", {
         provider: "data.gov.in",
@@ -154,7 +132,43 @@ export async function getMarketPrices(
     }
   }
 
-  if (records.length === 0) {
+  return { records, newestFetchedAt };
+}
+
+function isFresh(date: Date | null | undefined): boolean {
+  if (!date) {
+    return false;
+  }
+  const ttl = 6 * 60 * 60 * 1000;
+  return Date.now() - date.getTime() <= ttl;
+}
+
+export async function getMarketPrices(
+  scope: MarketScope,
+): Promise<MarketPricesResult> {
+  const costs = getMarketCostConfig();
+  const districtRequested = Boolean(scope.district);
+
+  // First try the exact scope (crop + state + district).
+  let resolved = await loadForScope(scope);
+  let widened = false;
+
+  // If a specific district returned nothing, widen to the state level and be
+  // explicit about the broader scope instead of pretending district-level data.
+  if (resolved.records.length === 0 && districtRequested) {
+    const widenedScope: MarketScope = { ...scope, district: undefined };
+    const widenedResult = await loadForScope(widenedScope);
+    if (widenedResult.records.length > 0) {
+      resolved = widenedResult;
+      widened = true;
+    }
+  }
+
+  const label = widened
+    ? scope.state ?? undefined
+    : scopeLabel(scope);
+
+  if (resolved.records.length === 0) {
     const configured = isMarketDataSourceConfigured();
     return {
       availability: configured ? "unavailable" : "unconfigured",
@@ -169,20 +183,37 @@ export async function getMarketPrices(
     };
   }
 
-  const fresh = isMarketDataFresh(newestFetchedAt);
+  const fresh = isFresh(resolved.newestFetchedAt);
   return {
     availability: fresh ? "fresh" : "stale",
-    records: attachNetPrice(records, costs),
+    records: attachNetPrice(resolved.records, costs),
     meta: {
-      count: records.length,
+      count: resolved.records.length,
       scopeLabel: label,
-      lastUpdated: newestFetchedAt
-        ? newestFetchedAt.toISOString()
+      lastUpdated: resolved.newestFetchedAt
+        ? resolved.newestFetchedAt.toISOString()
         : undefined,
       source: MARKET_DATA_SOURCE_LABEL,
-      message: fresh
-        ? undefined
-        : "Showing the latest available market data. Live update is temporarily unavailable.",
+      message: widened
+        ? fresh
+          ? "No prices were found for your district, so these are state-level market prices."
+          : "No district-level prices were found. Showing the latest available state-level data."
+        : fresh
+          ? undefined
+          : "Showing the latest available market data. Live update is temporarily unavailable.",
     },
   };
+}
+
+function attachNetPrice(
+  records: MarketPricesResult["records"],
+  costs: MarketCostConfig,
+): MarketPricesResult["records"] {
+  if (!hasCostConfig(costs)) {
+    return records;
+  }
+  return records.map((record) => ({
+    ...record,
+    expectedNetPrice: expectedNetPrice(record.modalPrice, costs),
+  }));
 }

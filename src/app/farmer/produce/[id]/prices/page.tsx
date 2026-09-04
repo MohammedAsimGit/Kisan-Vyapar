@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   CalendarDays,
-  Clock3,
   Database,
   Info,
   MapPin,
@@ -93,6 +92,7 @@ export default async function MarketPricesPage({ params }: RouteContext) {
           availability={result.availability}
           records={result.records}
           unitLabel={unitLabel(result.records[0]?.unit)}
+          message={result.meta.message}
         />
       )}
     </div>
@@ -103,20 +103,27 @@ function PriceResults({
   availability,
   records,
   unitLabel,
+  message,
 }: {
   availability: string;
   records: MarketPriceView[];
   unitLabel: string;
+  message?: string;
 }) {
+  const stale = availability === "stale";
+
   return (
     <div className="space-y-6">
-      {availability === "stale" ? (
-        <div className="flex items-start gap-3 rounded-2xl border border-warning-border bg-warning-bg p-4 text-sm leading-6 text-warning-fg">
-          <Clock3 className="mt-0.5 size-4 shrink-0" />
-          <span>
-            Showing the latest available market data. Live update is temporarily
-            unavailable.
-          </span>
+      {message ? (
+        <div
+          className={`flex items-start gap-3 rounded-2xl border p-4 text-sm leading-6 ${
+            stale
+              ? "border-warning-border bg-warning-bg text-warning-fg"
+              : "border-info-border bg-info-bg text-info-fg"
+          }`}
+        >
+          <Info className="mt-0.5 size-4 shrink-0" />
+          <span>{message}</span>
         </div>
       ) : (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
