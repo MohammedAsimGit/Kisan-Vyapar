@@ -122,19 +122,27 @@ A vendor's need-to-buy record.
 Indexes: `(vendor, status)`, `(crop, status)`, `(status, requiredBy)`, geo.
 
 ### MarketPrice
-Normalized market/mandi price snapshot (future ingestion).
+Normalized market/mandi observation (Sprint 3 ingestion pipeline).
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| commodity / variety | strings | normalized crop identity |
-| market / district / state | strings | where the price was observed |
-| unit | enum | price basis |
-| minPrice / maxPrice / modalPrice | numbers | modal required |
+| commodity | string | required; source commodity name |
+| crop | string | optional Kisan Vyapar catalogue id when mapped |
+| variety / grade | strings | optional |
+| market / district / state | strings | market + district required, state optional |
+| unit | enum | price basis (kg/quintal/tonne) |
+| minPrice / maxPrice / modalPrice | numbers | modal required; min ≤ max enforced at ingestion |
 | currency | enum | default INR |
-| arrivalDate / recordedAt | dates | observed time |
+| arrivalDate | date | date of the market observation (history key) |
+| source | string | provider label |
+| fetchedAt | date | when we fetched/persisted |
+| recordKey | string | deterministic dedupe key; unique sparse |
 | externalId | string | optional provider id; unique sparse |
 
-Indexes: `(commodity, market, recordedAt)`, `(state, district, market)`, geo not needed.
+One document per (source, commodity, market, arrival date, variety, grade) — a
+re-fetch on the same day upserts in place; a new arrival date creates a **new**
+document, preserving history. Indexes: `(crop, state, district, arrivalDate)`,
+`(commodity, state, market, arrivalDate)`, unique sparse `recordKey`/`externalId`.
 
 ### Offer
 A vendor's bid on a produce listing (negotiation foundation).

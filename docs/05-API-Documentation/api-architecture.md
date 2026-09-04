@@ -94,6 +94,35 @@ Create payload (Zod validated; no price field in Sprint 2):
 }
 ```
 
+### Market prices (Sprint 3)
+
+```text
+GET /api/market/prices                       → 200 (signed-in user)
+GET /api/farmer/produce/:id/prices           → 200 (farmer, own listing only)
+```
+
+`GET /api/market/prices` filters (Zod validated): `crop` (supported id), `state`,
+`district`, `market`, `from`/`to` (YYYY-MM-DD), `limit` (1–100, default 25).
+
+`GET /api/farmer/produce/:id/prices` derives crop/state/district from the saved
+listing server-side (no manual re-entry) and enforces farmer ownership.
+
+Response envelope:
+
+```jsonc
+{
+  "data": {
+    "availability": "fresh | stale | unavailable | unconfigured",
+    "prices": [ /* MarketPriceView DTOs (never raw external responses) */ ],
+    "meta": { "count": 0, "scopeLabel": "…", "lastUpdated": "…", "source": "…", "message": "…" }
+  }
+}
+```
+
+`unconfigured`/`unavailable` are honest states — market prices are never invented.
+Until the official source is verified and configured, the pipeline persists and
+serves cached DB records but does not fabricate live data.
+
 ## Session model
 
 Opaque random token (32 bytes, base64url) stored in an HttpOnly, SameSite=Lax,
@@ -110,7 +139,7 @@ Created in the sprint that implements them.
 /api/farmer/*            farmer profile + dashboard data          [partly live: /produce]
 /api/vendor/*            vendor profile + dashboard data          [planned]
 /api/admin/*             admin governance                          [planned]
-/api/market/prices       market/mandi prices (normalized)          [planned]
+/api/market/prices       market/mandi prices (normalized)          [live: /api/market/prices]
 /api/buyers/requirements vendor buying requirements CRUD           [planned]
 /api/matching            smart matching results                    [planned]
 /api/offers              negotiation / offers                      [planned]

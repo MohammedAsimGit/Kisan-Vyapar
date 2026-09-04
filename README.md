@@ -36,13 +36,16 @@ Discover → Match → Negotiate → Sell → Transport → Track → Payment
 
 ## Project status
 
-**Sprint 2 — Farmer crop discovery & produce entry (current).** On top of the
-Sprint 0/1 foundation (auth, roles, profiles, dashboards), a farmer can now add
-their crops through a guided visual flow: choose a crop (search / popular / full
-catalogue), enter quantity, unit, quality, optional variety, location (prefilled
-from profile) and harvest date, review, and save. Farmers manage their listings
-(My Produce), view details, edit, deactivate/reactivate and delete — and the farmer
-dashboard shows real produce from MongoDB.
+**Sprint 3 — Market Price Intelligence (current).** On top of Sprint 0–2, Kisan
+Vyapar now has a validated, normalized, history-safe market-price pipeline:
+`MarketPrice` persistence with dedupe, a 6-hour cache with explicit
+fresh/stale/unavailable states, a centralized crop→commodity mapping, a
+Zod-validated price API, and a farmer-facing "View Market Prices" page. The
+**live official source is still pending verification** (data.gov.in was in
+maintenance and requires an API key); until it is configured the app reports
+prices honestly as unconfigured — it never invents prices.
+
+**Sprint 2 (done):** Farmer crop discovery & produce entry — see roadmap.
 
 No asking price or market data is collected or displayed yet (deliberate — see
 [docs/02](docs/02-Requirements/requirements.md)). Future sprints add market-price
@@ -169,6 +172,7 @@ browser e2e tests yet.
 | --- | --- | --- |
 | `MONGODB_URI` | MongoDB connection | required for any DB access |
 | `DATABASE_NAME` | Database name | defaults to `kisan-vyapar` |
+| `MARKET_DATA_PROVIDER/BASE_URL/API_KEY/RESOURCE_ID` | Official market-data source | leave empty until verified; prices then report as unconfigured |
 
 Environment variables for future integrations (`AUTH_SECRET`, `MANDI_API_URL`,
 `MANDI_API_KEY`, `MAPS_API_KEY`, `AI_API_KEY`) will be added as those features are
@@ -194,7 +198,11 @@ implemented.
 - **Sprint 2 (done):** Farmer Crop Discovery & Produce Entry — centralized crop
   catalogue, visual multi-step add-crop, My Produce management (view/edit/
   deactivate/delete), ownership-enforced APIs, live dashboard data, tests.
-- **Sprint 3:** market-price intelligence & farmer asking price, then vendor
-  buying requirements + farmer discovery.
+- **Sprint 3 (done):** Market Price Intelligence — validated/normalized ingestion
+  pipeline, history-safe `MarketPrice` store + dedupe, crop→commodity mapping,
+  cache/freshness, price API, farmer price UI. Live official source still
+  **pending verification** (data.gov.in in maintenance; no API key).
+- **Sprint 4 (next):** enable/verify the official source, then price
+  recommendation & trend on real observations.
 - Later: matching & net realization, offers/negotiation, orders, market/mandi
   ingestion, payments/logistics, ratings, admin tooling.

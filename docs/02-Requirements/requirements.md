@@ -84,6 +84,24 @@ server layouts and API guards, never only by hiding navigation.
 **Deferred to next sprints:** asking price, market-price intelligence, trend,
 recommended price, net realization, buyer discovery.
 
+## Sprint 3 — Market price intelligence (status: Implemented — source unverified)
+
+| Requirement | Status |
+| --- | --- |
+| Market data provider boundary + env config (`MARKET_DATA_*`) | Implemented (disabled until verified/configured) |
+| External record validation + normalization (no silent fixes) | Implemented |
+| `MarketPrice` model: crop, commodity, grade, source, fetchedAt, recordKey | Implemented |
+| Duplicate prevention (deterministic recordKey) + history by arrival date | Implemented |
+| Centralized crop → commodity mapping | Implemented (needs validation vs official data) |
+| Cache strategy + freshness/stale/unavailable states | Implemented (6 h TTL) |
+| `GET /api/market/prices` with Zod-validated filters | Implemented |
+| Produce-scoped prices endpoint (ownership enforced) | Implemented |
+| Farmer market-price page + states (fresh/stale/empty/unconfigured) | Implemented |
+| Official source verification (endpoint/fields/rates) | **NOT VERIFIED** — data.gov.in in maintenance; no API key |
+| Manual real-data verification | **NOT VERIFIED** — Atlas unreachable at verification time |
+
+**Deferred to Sprint 4:** price recommendation, trend prediction, "best market".
+
 ## Farmer journey
 
 - **Implemented:** register, role select, farmer profile, dashboard, add/list/
@@ -96,11 +114,13 @@ recommended price, net realization, buyer discovery.
 - **Implemented:** register, role select, vendor profile, vendor dashboard shell.
 - **Planned:** buying requirements, farmer discovery/matches, negotiation, orders.
 
-## Market price architecture (Planned)
+## Market price architecture
 
-- Ingest market/mandi data behind a `MandiPriceProvider` boundary.
-- Normalize into `MandiPriceRecord`; validate; store/cache; serve.
-- **No government API is hardcoded or invented.**
+- **Implemented:** provider/client boundary, validation + normalization, cache +
+  Mongo persistence (history-safe), crop mapping, price API, farmer UI.
+- **Planned/blocked:** live official source verified + enabled (data.gov.in was in
+  maintenance and requires an API key during Sprint 3).
+- **No government API is hardcoded or invented; no fake prices exist.**
 
 ## Smart matching & net realization (Planned)
 
