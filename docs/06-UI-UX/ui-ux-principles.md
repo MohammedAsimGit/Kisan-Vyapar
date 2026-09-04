@@ -87,6 +87,18 @@ are shown as disabled controls + `Soon`/`Planned` badges — never fake working 
 - `/farmer`, `/vendor`, `/admin` — role dashboards with honest empty/planned
   states, setup checklists and quick actions. Admin shows **real** system status
   (database reachability + what is actually live).
+- `/farmer/produce` — "My Produce" management list with real data + premium empty
+  state.
+- `/farmer/produce/new` — guided multi-step crop entry: **Crop → Details →
+  Review** with progress indicator, visual crop cards, forgiving search, "view
+  all" categories, large numeric quantity + quick chips, unit cards, quality
+  cards, optional variety, location prefilled from profile, harvest date, and an
+  honest review ("we'll help you understand the market price" — no fake prices).
+- `/farmer/produce/[id]` (+ `/edit`) — listing detail, edit (prefilled multi-step),
+  deactivate/reactivate, and delete with inline confirmation.
+
+Farmer dashboards now show real produce data from MongoDB; the "Add Crop" action
+and the **My Produce** nav tab are live (other farmer tabs remain `Soon`).
 
 ## Navigation
 

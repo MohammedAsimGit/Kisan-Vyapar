@@ -62,10 +62,33 @@ external-service boundaries, and the documentation set.
 Role identifiers live in `src/constants/roles.ts`; authorization is enforced in
 server layouts and API guards, never only by hiding navigation.
 
+## Sprint 2 — Farmer crop discovery & produce entry (status: Implemented)
+
+| Requirement | Status |
+| --- | --- |
+| Centralized crop catalogue (ids, names, categories, popular set, varieties) | Implemented |
+| Quality grade vocabulary (A/B/C + "not sure") | Implemented |
+| Visual crop selection with search + "view all" categories | Implemented |
+| Multi-step entry: Crop → Details → Review → Save | Implemented |
+| Quantity + unit (kg/quintal/tonne), quality, optional variety | Implemented |
+| Location reused from farmer profile (listing copy, profile untouched) | Implemented |
+| Expected harvest date + "already harvested" | Implemented |
+| No asking price collected in Sprint 2 (price stays unset) | Implemented |
+| `ProduceListing` model: crop id, quality enum, optional price, harvest date | Implemented |
+| Produce APIs (list/create/get/patch/delete) + ownership enforcement | Implemented |
+| My Produce list, detail, edit, deactivate/reactivate, delete | Implemented |
+| Farmer dashboard shows real produce data from MongoDB | Implemented |
+| Ownership: listing operations scoped to the authenticated farmer's profile | Implemented |
+| Tests for crop catalogue, produce validation, DTO mapping | Implemented (72 tests total) |
+
+**Deferred to next sprints:** asking price, market-price intelligence, trend,
+recommended price, net realization, buyer discovery.
+
 ## Farmer journey
 
-- **Implemented:** register, role select, farmer profile, farmer dashboard shell.
-- **Planned:** produce listing CRUD, market context, buyer discovery/matches,
+- **Implemented:** register, role select, farmer profile, dashboard, add/list/
+  edit/deactivate/delete produce (visual crop entry).
+- **Planned:** market context & asking price, buyer discovery/matches,
   negotiation, orders.
 
 ## Vendor journey

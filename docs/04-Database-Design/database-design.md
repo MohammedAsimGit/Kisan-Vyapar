@@ -88,21 +88,23 @@ One per vendor user (`user` unique).
 | location | nested | as FarmerProfile |
 
 ### ProduceListing
-A farmer's offer to sell a crop.
+A farmer's structured crop record (Sprint 2).
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| farmer | ObjectId → FarmerProfile | required |
-| crop | string | free-text name (future: catalog id) |
-| variety / quality | string | optional descriptions |
-| quantity / unit | number + enum | required; unit: kg/quintal/tonne |
-| pricePerUnit / currency | number + enum | required; default INR |
-| images | string[] | image URLs (storage later) |
-| availableFrom | date | optional |
-| location | nested | pickup point |
-| status | enum | draft / active / sold_out / withdrawn |
+| farmer | ObjectId → FarmerProfile | required; ownership scoping |
+| crop | string | supported catalogue id (e.g. `tomato`), lowercase |
+| variety | string | optional; cleared when incompatible with crop |
+| quality | enum | `a` / `b` / `c` / `ungraded` (default `ungraded`) |
+| quantity / unit | number + enum | required (min 1); kg/quintal/tonne |
+| pricePerUnit | number | **optional** — intentionally unset until market-price workflow |
+| currency | enum | default INR |
+| images | string[] | reserved (storage later) |
+| expectedHarvestDate | date | harvest readiness |
+| location | nested | listing copy of profile address (profile never overwritten) |
+| status | enum | active / withdrawn / sold_out / draft |
 
-Indexes: `(farmer, status)`, `(crop, status)`, `(status, createdAt)`, geo.
+Indexes: `(farmer, status, createdAt)`, `(crop, status)`, geo `2dsphere`.
 
 ### BuyerRequirement
 A vendor's need-to-buy record.
@@ -172,17 +174,19 @@ Indexes: `(seller, status)`, `(buyer, status)`, `(produceListing, status)`,
 - `Payment`, `Transport`, `Review`, `Notification` collections are **not** modeled
   yet. Their status vocabularies exist as constants (see `src/constants/`), and
   they will be added with the sprints that actually use them.
-- Standardized crop/master catalog and quality grades are deferred; `crop` and
-  `quality` remain human-readable strings until a catalog is justified.
+- A supported **crop catalogue** (`src/constants/crops.ts`) and **quality grades**
+  (`src/constants/quality-grades.ts`) are implemented; `ProduceListing.crop` stores
+  a catalogue id. Free-text custom crops are not allowed (documented future
+  enhancement).
+- Market/mandi price collection is deliberately not modelled yet.
 
 ## Status of testing
 
 Unit tests exercise schema-level validation locally (e.g. `user.validation.test.ts`
 validates required/enum/match rules via `doc.validate()` without a database), and
-all code compiles and lints. A **live manual verification was performed against a
-running MongoDB** (development database): registration (farmer and vendor),
-session creation/read/revoke, duplicate-account conflict, profile upsert + read,
-authenticated dashboard access, logout, and login (including a wrong-password
-rejection). Automated database integration tests (real connection or
-`mongodb-memory-server`) are still future work; index creation, unique
-constraints, and TTL expiry were not exhaustively asserted automatically.
+all code compiles and lints. During Sprint 1 a **live manual verification was
+performed against a running MongoDB** (auth + profiles). During Sprint 2 the
+planned live produce CRUD/ownership run **could not be executed**: the configured
+MongoDB Atlas cluster was unreachable from this network (IP whitelist) at
+verification time — **NOT VERIFIED**. Automated database integration tests (real
+connection or `mongodb-memory-server`) remain future work.

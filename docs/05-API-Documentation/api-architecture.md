@@ -60,6 +60,40 @@ Role-scoped profile read/save for the signed-in user.
 Service health (see Sprint 0 docs). Reports database configured/reachable without
 leaking connection details.
 
+### Farmer produce (Sprint 2)
+
+All routes require a signed-in **farmer** whose profile exists; ownership is always
+derived from the session — the client can never choose an owner. Operations on
+another farmer's listing return `404` (no existence leak).
+
+```text
+POST   /api/farmer/produce          create listing            → 201
+GET    /api/farmer/produce          list my listings          → 200
+GET    /api/farmer/produce/:id      my listing detail         → 200 / 404
+PATCH  /api/farmer/produce/:id      update fields/status      → 200 / 404
+DELETE /api/farmer/produce/:id      delete my listing         → 200 / 404
+```
+
+`PATCH` accepts partial listing fields plus a `status` transition (`active` /
+`withdrawn`) for deactivate/reactivate. Vendors and other roles are rejected with
+`403`.
+
+Create payload (Zod validated; no price field in Sprint 2):
+
+```jsonc
+{
+  "crop": "tomato",                 // supported catalogue id
+  "variety": "Hybrid",              // optional
+  "quantity": 20,
+  "unit": "quintal",                // kg | quintal | tonne
+  "quality": "a",                   // a | b | c | ungraded
+  "location": {
+    "address": { "village": "…", "district": "…", "state": "…", "pincode": "…" }
+  },
+  "expectedHarvestDate": "2026-09-20"
+}
+```
+
 ## Session model
 
 Opaque random token (32 bytes, base64url) stored in an HttpOnly, SameSite=Lax,
@@ -73,11 +107,10 @@ immediately and sessions can be revoked (logout deletes the session document).
 Created in the sprint that implements them.
 
 ```text
-/api/farmer/*            farmer profile + dashboard data          [planned]
+/api/farmer/*            farmer profile + dashboard data          [partly live: /produce]
 /api/vendor/*            vendor profile + dashboard data          [planned]
 /api/admin/*             admin governance                          [planned]
 /api/market/prices       market/mandi prices (normalized)          [planned]
-/api/produce/listings    farmer produce listings CRUD              [planned]
 /api/buyers/requirements vendor buying requirements CRUD           [planned]
 /api/matching            smart matching results                    [planned]
 /api/offers              negotiation / offers                      [planned]

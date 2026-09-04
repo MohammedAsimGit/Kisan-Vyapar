@@ -36,25 +36,25 @@ Discover → Match → Negotiate → Sell → Transport → Track → Payment
 
 ## Project status
 
-**Sprint 1 — Authentication + roles + profiles (current).** On top of the Sprint 0
-foundation, a real user can now **register** (Farmer or Vendor), **choose a role**,
-**complete their profile**, **sign in and out**, hold a **persistent secure
-session**, and reach a **protected, role-specific dashboard**. Role areas
-(`/farmer`, `/vendor`, `/admin`) are enforced server-side.
+**Sprint 2 — Farmer crop discovery & produce entry (current).** On top of the
+Sprint 0/1 foundation (auth, roles, profiles, dashboards), a farmer can now add
+their crops through a guided visual flow: choose a crop (search / popular / full
+catalogue), enter quantity, unit, quality, optional variety, location (prefilled
+from profile) and harvest date, review, and save. Farmers manage their listings
+(My Produce), view details, edit, deactivate/reactivate and delete — and the farmer
+dashboard shows real produce from MongoDB.
 
-A **premium UI/UX revamp** has been layered over this foundation: a semantic design
-token system (light + dark), refined component library, redesigned landing/auth/
-onboarding/dashboard screens, and honest empty/planned states. See
-[docs/06-UI-UX](docs/06-UI-UX/ui-ux-principles.md) for the design system.
+No asking price or market data is collected or displayed yet (deliberate — see
+[docs/02](docs/02-Requirements/requirements.md)). Future sprints add market-price
+intelligence on top of this structured crop data.
 
 ```text
-Landing → Register → Select Role → Create Profile → Authenticated Session → Role Dashboard
+Register → Role → Profile → Dashboard → Add Crop → My Produce
 ```
 
-Produce listings, buyer requirements, matching, negotiation, and orders are the
-next sprints. Nothing in the UI shows fabricated numbers — unimplemented areas use
-honest empty/"Coming soon" states. See each `docs/` file for implemented/planned/
-future status.
+Nothing in the UI shows fabricated numbers — unimplemented areas use honest
+empty/"Coming soon" states. See each `docs/` file for implemented/planned/future
+status.
 
 ## Technology
 
@@ -152,11 +152,16 @@ Routes (all protected routes require a MongoDB-backed session):
 | `/auth/login` | sign in with phone/email + password |
 | `/onboarding` | complete the role profile |
 | `/farmer` `/vendor` `/admin` | protected role dashboards |
+| `/farmer/produce` | manage your crops (list) |
+| `/farmer/produce/new` | add a crop (visual multi-step) |
+| `/farmer/produce/[id]` | view / edit / deactivate / delete a crop |
 
-Known limitation: authentication and profile flows were verified end-to-end
-against a development MongoDB (register, session, profile, dashboard access,
-logout, login, wrong-password rejection). There are no automated database
-integration tests or browser e2e tests yet — those are planned for a later sprint.
+Known limitation: authentication, profile and session flows were verified
+end-to-end against a development MongoDB. The **Sprint 2 produce CRUD/ownership run
+could not be executed** because the configured MongoDB Atlas cluster was
+unreachable from this network (IP whitelist) during verification — run it once the
+database is reachable. There are no automated database integration tests or
+browser e2e tests yet.
 
 ## Environment variables
 
@@ -186,8 +191,10 @@ implemented.
 
 - **Sprint 1 (done):** authentication, role selection, sessions, profiles,
   protected dashboards, responsive UI, testing.
-- **Sprint 2 (next):** Farmer Produce Management — listing CRUD, honest dashboard
-  data, farmer-side flows.
-- **Sprint 3:** vendor buying requirements + farmer discovery.
+- **Sprint 2 (done):** Farmer Crop Discovery & Produce Entry — centralized crop
+  catalogue, visual multi-step add-crop, My Produce management (view/edit/
+  deactivate/delete), ownership-enforced APIs, live dashboard data, tests.
+- **Sprint 3:** market-price intelligence & farmer asking price, then vendor
+  buying requirements + farmer discovery.
 - Later: matching & net realization, offers/negotiation, orders, market/mandi
   ingestion, payments/logistics, ratings, admin tooling.

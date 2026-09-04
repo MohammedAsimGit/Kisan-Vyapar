@@ -2,13 +2,12 @@
 
 ## Status
 
-Sprint 1 added **Vitest** (node environment). Currently **8 files / 44 unit tests**
-pass locally via `npm run test`. In addition, a **manual live-DB verification**
-was run against a development MongoDB (see Known gaps). There are no browser e2e
-tests yet. Anything that later claims coverage must point at real tests, not this
-document.
+Vitest (node environment) runs the unit suite: **12 files / 72 tests** pass locally
+via `npm run test`. Sprint 1 also ran a **manual live-DB verification** against a
+development MongoDB (auth + profiles). There are no browser e2e tests yet.
+Anything that later claims coverage must point at real tests, not this document.
 
-## Implemented coverage (Sprint 1)
+## Implemented coverage
 
 | Area | What is tested |
 | --- | --- |
@@ -16,9 +15,13 @@ document.
 | Password hashing | bcrypt hash/verify, incorrect password, salt uniqueness, plaintext never stored |
 | Session tokens | random tokens, deterministic sha-256 hashing, safe comparison |
 | Page guards / authorization | unauth redirect to login, role allowed, role blocked + redirected to own dashboard |
+| Phone login variants | `+91…`/`91…`/`0…`/national/space formats resolve to the same account |
 | User model validation | required/enum/phone/email rules and `passwordHash select:false` via local `validate()` (no DB) |
 | Profiles | completeness rules (farmer/vendor), DTO mapping + empty-string normalization |
 | Shared validation | role enum, object id, `parseOrThrow` → `ValidationError` |
+| Crop catalogue | supported ids, unique ids, popular set, varieties |
+| Produce validation | supported/unsupported/missing crop, quantity (zero/negative/non-numeric), unit, quality, dates, partial updates + status transitions |
+| Produce DTO | date-only formatting, location text, full mapping, unknown-crop fallback |
 
 ## Tooling
 
@@ -36,7 +39,7 @@ document.
 ```bash
 npm run lint        # ESLint
 npm run typecheck   # tsc --noEmit
-npm run test        # Vitest (44 tests)
+npm run test        # Vitest (72 tests)
 npm run build       # production build + type pass
 ```
 
@@ -59,12 +62,12 @@ npm run build       # production build + type pass
 
 ## Known gaps (honest)
 
-- **No automated database integration tests yet.** A live manual verification was
-  performed against a development MongoDB (farmer and vendor registration, session
-  create/read/revoke, duplicate conflict, profile upsert/read, authed dashboards,
-  logout, login incl. wrong-password rejection), but index creation, unique
-  constraints, and TTL expiry are not asserted automatically. Add
-  `mongodb-memory-server` (or a dev URI) integration tests in a later sprint.
-- **No browser-level responsive/accessibility automation** yet; Sprint 1 UI was
-  built mobile-first and manually reviewed across widths, but automated visual
-  regression is future work.
+- **No automated database integration tests yet**, and Sprint 2's planned live
+  produce CRUD/ownership run **was NOT executed** — the configured MongoDB Atlas
+  cluster was unreachable from this network (IP whitelist) during verification.
+  Sprint 1's live verification (registration, sessions, profiles, logout, login)
+  is still valid. Produce create/list/update/status/delete + cross-farmer and
+  vendor rejection need a live run once the database is reachable.
+- **No browser-level responsive/accessibility automation** yet; UI is built
+  mobile-first and manually reviewed, but automated visual regression is future
+  work.
