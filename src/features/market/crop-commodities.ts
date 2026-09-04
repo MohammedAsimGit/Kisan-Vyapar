@@ -5,9 +5,9 @@ import { CROPS, getCropById } from "@/constants/crops";
  * by official agricultural market data.
  *
  * IMPORTANT: These candidate names are directional and MUST be validated against
- * the verified official dataset before the live provider is enabled (the source
- * could not be verified during Sprint 3 — data.gov.in was in maintenance and no
- * API key was available).
+ * the verified AGMARKNET 2.0 commodity masters (`/commodities`) before the live
+ * provider is enabled (real AGMARKNET access was not available during this
+ * migration, so the mapping could not be verified against live master data).
  */
 
 const CROP_TO_COMMODITIES: Record<string, string[]> = {

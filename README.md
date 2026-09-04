@@ -41,9 +41,12 @@ Vyapar now has a validated, normalized, history-safe market-price pipeline:
 `MarketPrice` persistence with dedupe, a 6-hour cache with explicit
 fresh/stale/unavailable states, a centralized crop→commodity mapping, a
 Zod-validated price API, and a farmer-facing "View Market Prices" page. The
-**live official source is still pending verification** (data.gov.in was in
-maintenance and requires an API key); until it is configured the app reports
-prices honestly as unconfigured — it never invents prices.
+**live official source is still pending verification** — the AGMARKNET 2.0 API
+base and endpoints were verified from the official portal
+(`https://api.agmarknet.gov.in/v1/`, `/daily-price-arrival/*`), but the report
+APIs return 403 without authentication and no access was available, so no real
+response has been captured and no schema is guessed. Until it is configured the
+app reports prices honestly as unconfigured — it never invents prices.
 
 **Sprint 2 (done):** Farmer crop discovery & produce entry — see roadmap.
 
@@ -172,7 +175,9 @@ browser e2e tests yet.
 | --- | --- | --- |
 | `MONGODB_URI` | MongoDB connection | required for any DB access |
 | `DATABASE_NAME` | Database name | defaults to `kisan-vyapar` |
-| `MARKET_DATA_PROVIDER/BASE_URL/API_KEY/RESOURCE_ID` | Official market-data source | leave empty until verified; prices then report as unconfigured |
+| `MARKET_DATA_PROVIDER` | Market provider name (`agmarknet`) | leave empty until verified; prices report as unconfigured |
+| `MARKET_DATA_BASE_URL` | Official AGMARKNET base URL | e.g. `https://api.agmarknet.gov.in/v1/` |
+| `MARKET_DATA_API_KEY` | AGMARKNET bearer token | server-only; never committed |
 
 Environment variables for future integrations (`AUTH_SECRET`, `MANDI_API_URL`,
 `MANDI_API_KEY`, `MAPS_API_KEY`, `AI_API_KEY`) will be added as those features are
@@ -200,8 +205,8 @@ implemented.
   deactivate/delete), ownership-enforced APIs, live dashboard data, tests.
 - **Sprint 3 (done):** Market Price Intelligence — validated/normalized ingestion
   pipeline, history-safe `MarketPrice` store + dedupe, crop→commodity mapping,
-  cache/freshness, price API, farmer price UI. Live official source still
-  **pending verification** (data.gov.in in maintenance; no API key).
+  cache/freshness, price API, farmer price UI. Live AGMARKNET 2.0 source still
+  **pending verification + access** (report APIs are 403 without authentication).
 - **Sprint 4 (next):** enable/verify the official source, then price
   recommendation & trend on real observations.
 - Later: matching & net realization, offers/negotiation, orders, market/mandi

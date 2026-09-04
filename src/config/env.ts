@@ -15,7 +15,6 @@ const serverEnvSchema = z.object({
   MARKET_DATA_PROVIDER: optionalNonEmptyString,
   MARKET_DATA_BASE_URL: optionalNonEmptyString,
   MARKET_DATA_API_KEY: optionalNonEmptyString,
-  MARKET_DATA_RESOURCE_ID: optionalNonEmptyString,
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -24,7 +23,6 @@ export interface MarketDataConfig {
   provider?: string;
   baseUrl?: string;
   apiKey?: string;
-  resourceId?: string;
 }
 
 export function getMarketDataConfig(): MarketDataConfig {
@@ -33,7 +31,6 @@ export function getMarketDataConfig(): MarketDataConfig {
     provider: env.MARKET_DATA_PROVIDER,
     baseUrl: env.MARKET_DATA_BASE_URL,
     apiKey: env.MARKET_DATA_API_KEY,
-    resourceId: env.MARKET_DATA_RESOURCE_ID,
   };
 }
 
