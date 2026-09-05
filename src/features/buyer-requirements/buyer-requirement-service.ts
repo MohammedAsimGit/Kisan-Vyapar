@@ -144,7 +144,7 @@ export async function createBuyerRequirement(
     targetPriceMin: data.targetPriceMin,
     targetPriceMax: data.targetPriceMax,
     requiredBy: new Date(`${data.requiredBy}T00:00:00Z`),
-    notes: data.notes,
+    notes: data.notes || undefined,
     location: toDbLocation(data.location),
     status: ACTIVE,
   });
@@ -297,7 +297,7 @@ export async function updateBuyerRequirementFields(
     targetPriceMin: validated.targetPriceMin,
     targetPriceMax: validated.targetPriceMax,
     requiredBy: new Date(`${validated.requiredBy}T00:00:00Z`),
-    notes: validated.notes,
+    notes: validated.notes || undefined,
     location: toDbLocation(validated.location),
   };
 
