@@ -1,4 +1,5 @@
 import type { ScoreBand } from "./config";
+import type { BuyerRequirementStatus } from "@/constants/buyer-requirement-statuses";
 import type { MatchCompatibility, MatchReason } from "./types";
 
 export interface FactorView {
@@ -40,6 +41,7 @@ export interface RequirementSummaryView {
   locationText?: string;
   requiredBy: string;
   notes?: string;
+  status: BuyerRequirementStatus;
   vendor?: VendorSummaryView;
 }
 

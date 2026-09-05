@@ -23,12 +23,12 @@ const ROLE_TABS: Record<"farmer" | "vendor", BottomTab[]> = {
   farmer: [
     { label: "Home", href: "/farmer", icon: Home },
     { label: "My Produce", href: "/farmer/produce", icon: Sprout },
-    { label: "Buyers", icon: Users, planned: true },
+    { label: "Buyers", href: "/farmer/requirements", icon: Users },
     { label: "Orders", icon: ClipboardList, planned: true },
   ],
   vendor: [
     { label: "Home", href: "/vendor", icon: Home },
-    { label: "Requirements", icon: ClipboardList, planned: true },
+    { label: "Requirements", href: "/vendor/requirements", icon: ClipboardList },
     { label: "Farmers", icon: Users, planned: true },
     { label: "Orders", icon: Package, planned: true },
   ],

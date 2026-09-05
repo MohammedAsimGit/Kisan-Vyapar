@@ -35,12 +35,6 @@ function cropLabel(cropId: string): string {
   return getCropById(cropId)?.name ?? cropId;
 }
 
-function unitLabel(unit: string): string {
-  if (unit === "kg") return "Kg";
-  if (unit === "tonne") return "Tonne";
-  return "Quintal";
-}
-
 function formatInr(value: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",

@@ -188,6 +188,7 @@ function requirementSummaryView(
     locationText: view.locationText || undefined,
     requiredBy: view.requiredBy,
     notes: view.notes,
+    status: view.status,
     ...(businessName ? { vendor: { businessName } } : {}),
   };
 }
@@ -211,11 +212,6 @@ function listingSummaryView(
     expectedHarvestDate: view.expectedHarvestDate,
     ...(farmerName ? { farmer: { farmerName } } : {}),
   };
-}
-
-interface ScoredRequirementRow {
-  requirementView: BuyerRequirementView;
-  match: MatchDetail;
 }
 
 interface ScoredListingRow {

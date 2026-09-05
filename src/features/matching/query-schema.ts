@@ -25,3 +25,22 @@ export function readSearchParams(
 ): Record<string, string> {
   return Object.fromEntries(searchParams.entries());
 }
+
+/**
+ * Parses Next.js page `searchParams` (string | string[] | undefined) into a
+ * validated match query with defaults, ready for server components.
+ */
+export async function matchQueryFromPageParams(
+  searchParams: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>,
+): Promise<MatchQuery> {
+  const params = await searchParams;
+  const urlSearchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value === "string") {
+      urlSearchParams.set(key, value);
+    } else if (Array.isArray(value) && value.length > 0) {
+      urlSearchParams.set(key, value[0]);
+    }
+  }
+  return matchQuerySchema.parse(readSearchParams(urlSearchParams));
+}
