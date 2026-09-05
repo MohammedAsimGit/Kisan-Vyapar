@@ -149,3 +149,13 @@ export async function getFarmerProfileRecordId(
     .lean();
   return doc ? String(doc._id) : null;
 }
+
+export async function getVendorProfileRecordId(
+  userId: string,
+): Promise<string | null> {
+  await connectToDatabase();
+  const doc = await VendorProfileModel.findOne({ user: userId })
+    .select({ _id: 1 })
+    .lean();
+  return doc ? String(doc._id) : null;
+}

@@ -10,6 +10,10 @@ import {
   MEASUREMENT_UNIT_VALUES,
   type MeasurementUnit,
 } from "@/constants/measurement-units";
+import {
+  QUALITY_GRADE_VALUES,
+  type QualityGrade,
+} from "@/constants/quality-grades";
 import type { GeoPoint, PostalAddress } from "@/types/geo";
 import { locationDefinition } from "./location-definition";
 import { MODEL_NAMES } from "./model-names";
@@ -18,12 +22,14 @@ export interface BuyerRequirement {
   vendor: Types.ObjectId;
   crop: string;
   variety?: string;
-  quality?: string;
+  quality: QualityGrade;
   quantity: number;
   unit: MeasurementUnit;
-  maxPricePerUnit: number;
+  targetPriceMin: number;
+  targetPriceMax: number;
   currency: Currency;
   requiredBy: Date;
+  notes?: string;
   location?: {
     label?: string;
     geo?: GeoPoint;
@@ -45,7 +51,8 @@ const buyerRequirementSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength: 100,
+      lowercase: true,
+      maxlength: 60,
     },
     variety: {
       type: String,
@@ -54,20 +61,25 @@ const buyerRequirementSchema = new Schema(
     },
     quality: {
       type: String,
-      trim: true,
-      maxlength: 400,
+      enum: QUALITY_GRADE_VALUES,
+      required: true,
     },
     quantity: {
       type: Number,
       required: true,
-      min: 0,
+      min: 1,
     },
     unit: {
       type: String,
       enum: MEASUREMENT_UNIT_VALUES,
       required: true,
     },
-    maxPricePerUnit: {
+    targetPriceMin: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    targetPriceMax: {
       type: Number,
       required: true,
       min: 0,
@@ -81,17 +93,22 @@ const buyerRequirementSchema = new Schema(
       type: Date,
       required: true,
     },
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: 400,
+    },
     location: locationDefinition,
     status: {
       type: String,
       enum: BUYER_REQUIREMENT_STATUS_VALUES,
-      default: BUYER_REQUIREMENT_STATUS.DRAFT,
+      default: BUYER_REQUIREMENT_STATUS.ACTIVE,
     },
   },
   { timestamps: true },
 );
 
-buyerRequirementSchema.index({ vendor: 1, status: 1 });
+buyerRequirementSchema.index({ vendor: 1, status: 1, createdAt: -1 });
 buyerRequirementSchema.index({ crop: 1, status: 1 });
 buyerRequirementSchema.index({ status: 1, requiredBy: 1 });
 buyerRequirementSchema.index({ "location.geo": "2dsphere" });
