@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarDays, MapPin, Plus, Sprout } from "lucide-react";
-import { Badge, EmptyState, linkButtonClass, PageHeader } from "@/components/ui";
+import { EmptyState, linkButtonClass, PageHeader } from "@/components/ui";
+import { ProduceStatusBadge } from "@/components/produce/produce-status-badge";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
 import { getFarmerProfileRecordId } from "@/features/profiles/profile-service";
 import {
@@ -37,9 +38,9 @@ export default async function FarmerProducePage() {
 
       {activeCount > 0 ? (
         <p className="text-sm text-muted-foreground">
-          {activeCount} {activeCount === 1 ? "crop" : "crops"} ready to sell
+          {activeCount} {activeCount === 1 ? "published crop" : "published crops"}
           {listings.length > activeCount
-            ? ` · ${listings.length - activeCount} inactive`
+            ? ` · ${listings.length - activeCount} not published`
             : ""}
           .
         </p>
@@ -69,8 +70,6 @@ export default async function FarmerProducePage() {
 }
 
 function ProduceCard({ listing }: { listing: ProduceListingView }) {
-  const active = listing.status === "active";
-
   return (
     <Link
       href={`/farmer/produce/${listing.id}`}
@@ -90,9 +89,7 @@ function ProduceCard({ listing }: { listing: ProduceListingView }) {
             ) : null}
           </div>
         </div>
-        <Badge tone={active ? "success" : "outline"}>
-          {active ? "Active" : "Inactive"}
-        </Badge>
+        <ProduceStatusBadge status={listing.status} />
       </div>
 
       <dl className="mt-5 space-y-2 text-sm">

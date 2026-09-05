@@ -8,6 +8,7 @@ import {
   Check,
   Database,
   Info,
+  Rocket,
   TrendingUp,
 } from "lucide-react";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
@@ -79,6 +80,14 @@ export default async function MarketPricesPage({ params }: RouteContext) {
             : `${listing.quantity} ${listing.unitLabel} · ${listing.qualityLabel}`
         }
       />
+
+      {listing.status === "draft" ? (
+        <p className="flex items-center gap-2 rounded-xl border border-warning-border bg-warning-bg/60 px-4 py-3 text-sm leading-6 text-warning-fg">
+          <Rocket className="size-4 shrink-0" />
+          Your crop is a draft. Set an asking price you are comfortable with, then
+          publish it from the crop page to start matching with real buyers.
+        </p>
+      ) : null}
 
       {!mapped ? (
         <EmptyState

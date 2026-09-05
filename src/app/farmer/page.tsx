@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { Badge, linkButtonClass, PageHeader } from "@/components/ui";
+import { ProduceStatusBadge } from "@/components/produce/produce-status-badge";
 import { greetingForHour } from "@/lib/utils/greeting";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
 import { getFarmerProfileRecordId } from "@/features/profiles/profile-service";
@@ -136,10 +137,11 @@ export default async function FarmerDashboardPage() {
             title="Today's Prices"
             body="See real market context for your crops."
           />
-          <QuickAction
+          <QuickActionLink
+            href="/farmer/requirements"
             icon={<Users className="size-5" />}
-            title="Find Buyers"
-            body="Discover buyers looking for your produce."
+            title="Buyer Requirements"
+            body="Real buyers looking for your published crops."
           />
           <QuickAction
             icon={<ClipboardList className="size-5" />}
@@ -173,9 +175,7 @@ function CropRow({ listing }: { listing: ProduceListingView }) {
           {shortDate(listing.expectedHarvestDate)}
         </span>
       ) : null}
-      <Badge tone={listing.status === "active" ? "success" : "outline"}>
-        {listing.status === "active" ? "Active" : "Inactive"}
-      </Badge>
+      <ProduceStatusBadge status={listing.status} />
     </Link>
   );
 }

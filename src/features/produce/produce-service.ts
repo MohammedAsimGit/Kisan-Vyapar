@@ -1,6 +1,10 @@
 import "server-only";
 import { connectToDatabase } from "@/lib/db";
-import { ProduceListingModel } from "@/models";
+import {
+  FarmerProfileModel,
+  ProduceListingModel,
+  UserModel,
+} from "@/models";
 import { getCropById } from "@/constants/crops";
 import { PRODUCE_LISTING_STATUS } from "@/constants/produce-listing-statuses";
 import { parseOrThrow } from "@/lib/validation";
@@ -49,7 +53,9 @@ export async function createProduceListing(
     quality: input.quality,
     expectedHarvestDate: new Date(`${input.expectedHarvestDate}T00:00:00Z`),
     location: toDbLocation(input.location),
-    status: PRODUCE_LISTING_STATUS.ACTIVE,
+    // A new crop is a draft until the farmer intentionally publishes it.
+    // Only published (active) listings participate in buyer matching.
+    status: PRODUCE_LISTING_STATUS.DRAFT,
   });
 
   return toProduceListingView(doc);
@@ -75,6 +81,46 @@ export async function getFarmerProduceListing(
     farmer: farmerProfileId,
   }).lean();
   return doc ? toProduceListingView(doc) : null;
+}
+
+export interface PublishedProduceListing {
+  listing: ProduceListingView;
+  farmerName?: string;
+}
+
+/**
+ * Read-only view of a published (active) listing for the other side of the
+ * marketplace. Never exposes owner identity beyond the public farmer name.
+ */
+export async function getPublishedProduceListing(
+  listingId: string,
+): Promise<PublishedProduceListing | null> {
+  await connectToDatabase();
+  const doc = await ProduceListingModel.findOne({
+    _id: listingId,
+    status: PRODUCE_LISTING_STATUS.ACTIVE,
+  }).lean();
+  if (!doc) {
+    return null;
+  }
+
+  const farmerName = await (async () => {
+    const profile = await FarmerProfileModel.findById(doc.farmer)
+      .select({ user: 1 })
+      .lean();
+    if (!profile?.user) {
+      return undefined;
+    }
+    const user = await UserModel.findById(profile.user)
+      .select({ fullName: 1 })
+      .lean();
+    return user?.fullName || undefined;
+  })();
+
+  return {
+    listing: toProduceListingView(doc),
+    farmerName,
+  };
 }
 
 export async function updateProduceListing(
