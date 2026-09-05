@@ -102,24 +102,37 @@ A farmer's structured crop record (Sprint 2).
 | images | string[] | reserved (storage later) |
 | expectedHarvestDate | date | harvest readiness |
 | location | nested | listing copy of profile address (profile never overwritten) |
-| status | enum | active / withdrawn / sold_out / draft |
+| status | enum | `draft` / `active` / `sold_out` / `withdrawn` — **new listings start as `draft`** |
 
-Indexes: `(farmer, status, createdAt)`, `(crop, status)`, geo `2dsphere`.
+Indexes: `(farmer, status, createdAt)`, `(crop, status)`, geo `2dsphere`. Matching
+only ever queries `status: "active"` produce (intentionally published), so
+drafts/deactivated listings are excluded at the database layer.
 
 ### BuyerRequirement
-A vendor's need-to-buy record.
+A vendor's need-to-buy record (Sprint 5 — the source of marketplace demand).
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| vendor | ObjectId → VendorProfile | required |
-| crop, variety, quality | strings | as listing |
-| quantity / unit | number + enum | required |
-| maxPricePerUnit / currency | number + enum | required; default INR |
-| requiredBy | date | required |
-| location | nested | pickup point |
-| status | enum | draft / open / fulfilled / cancelled |
+| vendor | ObjectId → VendorProfile | required; ownership scoping |
+| crop | string | supported catalogue id (e.g. `tomato`), lowercase |
+| variety | string | optional |
+| quality | enum | `a` / `b` / `c` / `ungraded` — matches produce grades so matching is exact |
+| quantity / unit | number + enum | required (min 1); kg/quintal/tonne |
+| targetPriceMin / targetPriceMax | numbers | required (min 0, max ≥ min — enforced by Zod at the boundary) |
+| currency | enum | default INR |
+| requiredBy | date | required; cannot be in the past |
+| notes | string | optional (≤ 400) |
+| location | nested | preferred region (district + state required) for honest region matching |
+| status | enum | `active` / `paused` / `fulfilled` / `expired` / `cancelled` (default `active`) |
 
-Indexes: `(vendor, status)`, `(crop, status)`, `(status, requiredBy)`, geo.
+A requirement is created `active` and its lifecycle is **controlled server-side**:
+only active can be paused/fulfilled, only paused can be resumed, active/paused can
+be cancelled, and active requirements whose `requiredBy` has passed are treated as
+`expired`.
+
+Indexes: `(vendor, status, createdAt)`, `(crop, status)`, `(status, requiredBy)`,
+geo `2dsphere`. The `(crop, status)` + `(status, requiredBy)` pair backs the
+matching pre-filter (active, future-dated, same crop) before any scoring runs.
 
 ### MarketPrice
 Normalized market/mandi observation (Sprint 3 ingestion pipeline).

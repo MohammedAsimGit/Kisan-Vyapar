@@ -105,8 +105,15 @@ Future route segments under `src/app` (created when their first page lands):
   DB-backed sessions + logout, session endpoint, farmer/vendor profiles with
   completion flow, server-enforced role authorization, farmer/vendor/admin
   dashboard shells, reusable UI kit, responsive layouts, Vitest coverage.
-- **Planned:** produce listings, buyer requirements, matching, offers, orders,
-  market-price ingestion, negotiation.
+- **Implemented (Sprint 2):** crop catalogue + produce CRUD with ownership.
+- **Implemented (Sprint 3–4):** market/mandi price pipeline + deterministic
+  price guidance engine (see `docs/07-Algorithms/pricing-guidance.md`).
+- **Implemented (Sprint 5):** vendor buying requirements with a controlled
+  lifecycle, an intentional produce publish flow, and a deterministic,
+  explainable matching engine (`features/buyer-requirements` +
+  `features/matching`; algorithm in `docs/07-Algorithms/matching-guidance.md`).
+- **Planned (Sprint 6+):** offers/negotiation, orders, matching across
+  requirements in more detail.
 - **Future:** payments, logistics execution, AI advisor, multilingual engine,
   voice, ratings, admin tooling.
 

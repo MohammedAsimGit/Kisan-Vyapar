@@ -4,6 +4,21 @@ import type { BuyerRequirementView } from "@/features/buyer-requirements/types";
 import { RequirementStatusBadge } from "./requirement-status-badge";
 import { RequirementFacts } from "./requirement-facts";
 
+function formatCreated(iso: string): string {
+  if (!iso) {
+    return "recently";
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return "recently";
+  }
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export function RequirementCard({
   requirement,
   href,
@@ -47,7 +62,11 @@ export function RequirementCard({
         notes={requirement.status === "active" ? requirement.notes : undefined}
       />
 
-      <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
+      <p className="mt-3 text-xs text-muted-foreground">
+        Posted {formatCreated(requirement.createdAt)}
+      </p>
+
+      <span className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary">
         View requirement
         <ArrowRight aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-0.5" />
       </span>

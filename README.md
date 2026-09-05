@@ -36,23 +36,27 @@ Discover → Match → Negotiate → Sell → Transport → Track → Payment
 
 ## Project status
 
-**Sprint 3 — Market Price Intelligence (current).** On top of Sprint 0–2, Kisan
-Vyapar now has a validated, normalized, history-safe market-price pipeline:
-`MarketPrice` persistence with dedupe, a 6-hour cache with explicit
-fresh/stale/unavailable states, a centralized crop→commodity mapping, a
-Zod-validated price API, and a farmer-facing "View Market Prices" page. The
-**live official source is still pending verification** — the provider is the
-Government of India **data.gov.in** resource API ("Current Daily Price of Various
-Commodities from Various Markets (Mandi)", AGMARKNET mandi data published on
-data.gov.in). A real response has **not** been captured in this environment
-(`MARKET_DATA_*` is not configured locally), so the provider stays safely
-unconfigured and no schema is guessed — the app never invents prices.
+**Sprint 5 — Buyer Requirements & Smart Farmer Matching (current).** On top of
+Sprints 0–4, Kisan Vyapar now connects real **demand** to real **supply**:
+vendors post buying requirements (created active, with a controlled
+active/paused/fulfilled/expired/cancelled lifecycle), farmers intentionally
+publish produce, and a **deterministic, explainable matching engine** scores
+published listings against active requirements (crop, quality, quantity,
+price, location, availability) with reasons for every result. Both sides see
+only real records — never demo buyers, demo listings or invented scores. The
+matching algorithm, scoring weights and honesty rules are documented in
+[docs/07-Algorithms/matching-guidance.md](docs/07-Algorithms/matching-guidance.md).
+
+Market-price intelligence from Sprints 3–4 remains as-is; the live
+**data.gov.in** source is still pending verification (a real response has not
+been captured in this environment, so the provider stays safely unconfigured and
+the app never invents prices).
 
 **Sprint 2 (done):** Farmer crop discovery & produce entry — see roadmap.
 
-No asking price or market data is collected or displayed yet (deliberate — see
-[docs/02](docs/02-Requirements/requirements.md)). Future sprints add market-price
-intelligence on top of this structured crop data.
+Sprints 3–4 layered real market data and price guidance on top of that
+structured crop data, and Sprint 5 added the publish gate + buyer demand layer
+that connects listings to posted requirements.
 
 ```text
 Register → Role → Profile → Dashboard → Add Crop → My Produce
@@ -160,7 +164,13 @@ Routes (all protected routes require a MongoDB-backed session):
 | `/farmer` `/vendor` `/admin` | protected role dashboards |
 | `/farmer/produce` | manage your crops (list) |
 | `/farmer/produce/new` | add a crop (visual multi-step) |
-| `/farmer/produce/[id]` | view / edit / deactivate / delete a crop |
+| `/farmer/produce/[id]` | view / edit / publish / deactivate / delete a crop |
+| `/farmer/produce/[id]/prices` | market intelligence + set your asking price |
+| `/farmer/produce/[id]/matches` | buyer requirements matching this published crop |
+| `/farmer/requirements` | real buyer requirements across your published crops |
+| `/vendor/requirements` | manage your buying requirements (list) |
+| `/vendor/requirements/new` | post a buying requirement |
+| `/vendor/requirements/[id]` | requirement detail, actions + matching farmers |
 
 Known limitation: authentication, profile and session flows were verified
 end-to-end against a development MongoDB. The **Sprint 2 produce CRUD/ownership run
@@ -195,6 +205,7 @@ implemented.
 - [UI/UX principles](docs/06-UI-UX/ui-ux-principles.md)
 - [Algorithm overview](docs/07-Algorithms/algorithm-overview.md)
 - [Price guidance methodology](docs/07-Algorithms/pricing-guidance.md)
+- [Buyer requirement matching](docs/07-Algorithms/matching-guidance.md)
 - [AI architecture](docs/08-AI/ai-architecture.md)
 - [Testing strategy](docs/09-Testing/testing-strategy.md)
 - [Deployment overview](docs/10-Deployment/deployment-overview.md)
@@ -216,5 +227,12 @@ implemented.
   range) over real data.gov.in observations; farmer can use the suggestion or set
   their own asking price; market-price screen redesigned as a compact Market
   Intelligence view (Snapshot → Guidance → Trend → compact market rows).
-- **Next:** vendor buying requirements + farmer discovery; matching & net
-  realization; offers/negotiation; orders.
+- **Sprint 5 (done):** Buyer Requirements & Smart Matching — vendor buying
+  requirements with a controlled lifecycle + ownership enforcement; produce
+  publish flow (new listings start as drafts and must be intentionally
+  published); deterministic explainable matching (weights centralised, partial
+  quantity supported, distance/reliability never fabricated) with farmer and
+  vendor match views, filters, sorting and pagination. Negotiation is stubbed
+  with a clear "next update" boundary.
+- **Next:** offers/negotiation (Sprint 6) on top of the requirement demand
+  layer; orders; net-realization tools beyond matching.

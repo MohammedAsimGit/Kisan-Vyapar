@@ -52,7 +52,7 @@ export function RequirementFacts({
         <Fact label="Grade" value={qualityLabel} />
         <Fact
           label="Target price"
-          value={`${formatInr(targetPriceMin)} – ${formatInr(targetPriceMax)}`}
+          value={`${formatInr(targetPriceMin)} – ${formatInr(targetPriceMax)} / ${unitLabel}`}
         />
         {locationText ? (
           <div className="col-span-2 sm:col-span-1">

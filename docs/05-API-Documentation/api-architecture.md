@@ -74,8 +74,9 @@ PATCH  /api/farmer/produce/:id      update fields/status      → 200 / 404
 DELETE /api/farmer/produce/:id      delete my listing         → 200 / 404
 ```
 
-`PATCH` accepts partial listing fields plus a `status` transition (`active` /
-`withdrawn`) for deactivate/reactivate. Vendors and other roles are rejected with
+`PATCH` accepts partial listing fields plus a `status` transition. Setting
+`status: "active"` **publishes** the listing (Sprint 5 publish flow) and
+`status: "withdrawn"` deactivates it. Vendors and other roles are rejected with
 `403`.
 
 Create payload (Zod validated; no price field in Sprint 2):
@@ -93,6 +94,75 @@ Create payload (Zod validated; no price field in Sprint 2):
   "expectedHarvestDate": "2026-09-20"
 }
 ```
+
+New listings are created as **`draft`** (Sprint 5): a listing only participates
+in buyer matching after the farmer intentionally publishes it with
+`PATCH … { "status": "active" }`. Asking prices are set through
+`PATCH /api/farmer/produce/:id/asking-price` (Sprint 4).
+
+### Buying requirements (Sprint 5)
+
+Vendor-owned demand records. Identity always comes from the session; a vendor
+can only create/read/update/transition **their own** requirements (someone
+else's reads as `404`).
+
+```text
+POST   /api/vendor/requirements             post requirement (becomes active) → 201
+GET    /api/vendor/requirements             list my requirements + status counts → 200
+GET    /api/vendor/requirements/:id         my requirement detail → 200 / 404
+PATCH  /api/vendor/requirements/:id         edit fields, or transition status → 200 / 404
+```
+
+`PATCH` is either a field edit (active/paused only) or a **status transition**:
+
+| body `status` | transition | allowed from |
+| --- | --- | --- |
+| `paused` | pause | active |
+| `active` | resume | paused |
+| `fulfilled` | mark fulfilled | active |
+| `cancelled` | cancel | active / paused |
+
+Requirements are validated with Zod (supported crop, quality grade, quantity >
+0, `targetPriceMax ≥ targetPriceMin`, non-past `requiredBy`, district + state).
+
+### Matching (Sprint 5)
+
+Deterministic, explainable matching between *published* produce and *active*
+requirements (see [matching algorithm](../07-Algorithms/matching-guidance.md)).
+
+```text
+GET /api/farmer/produce/:listingId/matches      farmer: requirements for own published listing
+GET /api/vendor/requirements/:requirementId/matches  vendor: published listings for own active requirement
+```
+
+Both enforce ownership and return the same shape:
+
+```jsonc
+{
+  "data": {
+    "listing": { "id": "…", "cropName": "Tomato", "quantity": 20, "askingPricePerUnit": 2750, "locationText": "…" },
+    "matches": [
+      {
+        "requirement": { "id": "…", "vendor": { "businessName": "…" }, "cropName": "Tomato", "targetPriceMin": 2600, "targetPriceMax": 2800, "requiredBy": "2026-09-15" },
+        "match": {
+          "score": 94,
+          "band": "strong",
+          "factors": [ { "key": "price", "label": "Price", "score": 100, "detail": "…" } ],
+          "reasons": [ { "tone": "positive", "text": "The asking price (₹2,750) fits inside the target range (₹2,600–₹2,800)." } ],
+          "flags": { "strong": true, "priceCompatible": true, "qualityCompatible": true, "quantityCompatible": false, "nearby": true }
+        }
+      }
+    ],
+    "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1, "filter": "all", "sort": "score" }
+  }
+}
+```
+
+Query params (`filter` in `all | strong | price | quality | quantity | nearby`,
+`sort` in `score | deadline | nearest`, `page` ≥ 1, `limit` 1–50) are
+Zod-validated. Match DTOs expose only public data — never phone numbers, emails
+or internal fields. An active-but-unmatched query returns `matches: []`, never
+sample data.
 
 ### Market prices (Sprint 3)
 
@@ -136,18 +206,18 @@ immediately and sessions can be revoked (logout deletes the session document).
 Created in the sprint that implements them.
 
 ```text
-/api/farmer/*            farmer profile + dashboard data          [partly live: /produce]
-/api/vendor/*            vendor profile + dashboard data          [planned]
-/api/admin/*             admin governance                          [planned]
-/api/market/prices       market/mandi prices (normalized)          [live: /api/market/prices]
-/api/buyers/requirements vendor buying requirements CRUD           [planned]
-/api/matching            smart matching results                    [planned]
-/api/offers              negotiation / offers                      [planned]
-/api/orders              order lifecycle                           [planned]
-/api/logistics           transport estimates & tracking            [planned]
-/api/payments            payment lifecycle                         [future]
-/api/reviews             ratings and reviews                       [future]
-/api/notifications       user notifications                        [future]
+/api/auth/*            auth (register/login/logout/session)        [live]
+/api/profile           role-scoped profile                         [live]
+/api/farmer/*          farmer produce + matches                    [live]
+/api/vendor/*          vendor buying requirements + matches        [live]
+/api/admin/*           admin governance                            [planned]
+/api/market/prices     market/mandi prices (normalized)            [live]
+/api/offers            negotiation / offers                        [planned — Sprint 6]
+/api/orders            order lifecycle                             [planned]
+/api/logistics         transport estimates & tracking              [planned]
+/api/payments          payment lifecycle                           [future]
+/api/reviews           ratings and reviews                         [future]
+/api/notifications     user notifications                          [future]
 ```
 
 ## Authorization rules
@@ -156,8 +226,8 @@ Created in the sprint that implements them.
 | --- | --- |
 | `/api/auth/*` | public (register/login), signed-in (logout/session) |
 | `/api/profile` | signed-in farmer or vendor (role-scoped) |
-| `/api/farmer/*` | farmer |
-| `/api/vendor/*` | vendor |
+| `/api/farmer/*` | farmer (own listings only; matches for published own listings) |
+| `/api/vendor/*` | vendor (own requirements only; matches for active own requirements) |
 | `/api/admin/*` | admin |
 
 Server enforcement: layouts/guards on pages (`requirePageRole`), explicit auth on
