@@ -36,15 +36,26 @@ Discover → Match → Negotiate → Sell → Transport → Track → Payment
 
 ## Project status
 
-**Sprint 5 — Buyer Requirements & Smart Farmer Matching (current).** On top of
-Sprints 0–4, Kisan Vyapar now connects real **demand** to real **supply**:
-vendors post buying requirements (created active, with a controlled
-active/paused/fulfilled/expired/cancelled lifecycle), farmers intentionally
-publish produce, and a **deterministic, explainable matching engine** scores
-published listings against active requirements (crop, quality, quantity,
-price, location, availability) with reasons for every result. Both sides see
-only real records — never demo buyers, demo listings or invented scores. The
-matching algorithm, scoring weights and honesty rules are documented in
+**Sprint 6 — Negotiation & Offers (current).** On top of Sprints 0–5
+(market intelligence, price guidance, published supply, posted demand,
+deterministic matching), a farmer can now make a **real offer** against an
+active buying requirement for their own published produce. Both sides
+negotiate with counters, accept/reject/withdraw, and the **immutable
+negotiation history** keeps every step auditable. Acceptance atomically
+consumes the requirement's remaining quantity (concurrent double-accepts fail
+safely), auto-fulfils fully committed requirements, and locks the final terms
+behind a clean Sprint 7 order boundary — no order is created yet. All
+negotiation rules, the state machine and the concurrency approach are
+documented in
+[docs/07-Algorithms/negotiation.md](docs/07-Algorithms/negotiation.md).
+
+Sprint 5 remains: vendors post buying requirements (created active, with a
+controlled active/paused/fulfilled/expired/cancelled lifecycle), farmers
+intentionally publish produce, and a **deterministic, explainable matching
+engine** scores published listings against active requirements (crop,
+quality, quantity, price, location, availability) with reasons for every
+result. Both sides see only real records — never demo buyers, demo listings
+or invented scores. See
 [docs/07-Algorithms/matching-guidance.md](docs/07-Algorithms/matching-guidance.md).
 
 Market-price intelligence from Sprints 3–4 remains as-is; the live
@@ -168,9 +179,14 @@ Routes (all protected routes require a MongoDB-backed session):
 | `/farmer/produce/[id]/prices` | market intelligence + set your asking price |
 | `/farmer/produce/[id]/matches` | buyer requirements matching this published crop |
 | `/farmer/requirements` | real buyer requirements across your published crops |
+| `/farmer/offers` | my negotiations (offers sent + counters received) |
+| `/farmer/offers/new?produceId=&requirementId=` | make an offer against a requirement |
+| `/farmer/offers/[id]` | negotiation detail: timeline + accept/counter/reject |
 | `/vendor/requirements` | manage your buying requirements (list) |
 | `/vendor/requirements/new` | post a buying requirement |
 | `/vendor/requirements/[id]` | requirement detail, actions + matching farmers |
+| `/vendor/offers` | offers from farmers on your requirements |
+| `/vendor/offers/[id]` | negotiation detail: timeline + accept/counter/reject |
 
 Known limitation: authentication, profile and session flows were verified
 end-to-end against a development MongoDB. The **Sprint 2 produce CRUD/ownership run
@@ -206,6 +222,7 @@ implemented.
 - [Algorithm overview](docs/07-Algorithms/algorithm-overview.md)
 - [Price guidance methodology](docs/07-Algorithms/pricing-guidance.md)
 - [Buyer requirement matching](docs/07-Algorithms/matching-guidance.md)
+- [Negotiation & offers](docs/07-Algorithms/negotiation.md)
 - [AI architecture](docs/08-AI/ai-architecture.md)
 - [Testing strategy](docs/09-Testing/testing-strategy.md)
 - [Deployment overview](docs/10-Deployment/deployment-overview.md)
@@ -232,7 +249,13 @@ implemented.
   publish flow (new listings start as drafts and must be intentionally
   published); deterministic explainable matching (weights centralised, partial
   quantity supported, distance/reliability never fabricated) with farmer and
-  vendor match views, filters, sorting and pagination. Negotiation is stubbed
-  with a clear "next update" boundary.
-- **Next:** offers/negotiation (Sprint 6) on top of the requirement demand
-  layer; orders; net-realization tools beyond matching.
+  vendor match views, filters, sorting and pagination.
+- **Sprint 6 (done):** Negotiation & Offers — farmer offers referencing real
+  produce + real requirements; immutable negotiation history; controlled
+  PENDING/COUNTERED/ACCEPTED/REJECTED/WITHDRAWN lifecycle; role-aware
+  accept/counter/reject/withdraw; server-computed totals; remaining-quantity
+  tracking with atomic acceptance and auto-fulfilment; duplicate-live-thread
+  protection; farmer "My Negotiations" + vendor "Offers" UI with a Sprint 7
+  order boundary. No orders are created yet.
+- **Next:** orders from accepted agreements (Sprint 7); net-realization tools
+  beyond matching.

@@ -118,6 +118,7 @@ A vendor's need-to-buy record (Sprint 5 — the source of marketplace demand).
 | variety | string | optional |
 | quality | enum | `a` / `b` / `c` / `ungraded` — matches produce grades so matching is exact |
 | quantity / unit | number + enum | required (min 1); kg/quintal/tonne |
+| allocatedQuantity | number | default 0; incremented atomically when an offer is accepted (never on send) |
 | targetPriceMin / targetPriceMax | numbers | required (min 0, max ≥ min — enforced by Zod at the boundary) |
 | currency | enum | default INR |
 | requiredBy | date | required; cannot be in the past |
@@ -158,19 +159,27 @@ document, preserving history. Indexes: `(crop, state, district, arrivalDate)`,
 `(commodity, state, market, arrivalDate)`, unique sparse `recordKey`/`externalId`.
 
 ### Offer
-A vendor's bid on a produce listing (negotiation foundation).
+One negotiation thread between a farmer and a vendor about one produce listing
+and one buying requirement (Sprint 6). The offer is **farmer-initiated** — it
+references both anchors of the transaction.
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| produceListing | ObjectId → ProduceListing | required |
-| vendor | ObjectId → VendorProfile | required |
-| offeredPricePerUnit / currency | number + enum | required |
-| quantity / unit | number + enum | required |
-| validUntil | date | optional |
-| message | string | optional |
-| status | enum | pending / accepted / rejected / withdrawn |
+| produceListing | ObjectId → ProduceListing | required; supply anchor |
+| requirement | ObjectId → BuyerRequirement | required; demand anchor |
+| farmer / vendor | ObjectId → profiles | required; farmer owns listing, vendor owns requirement |
+| quantity / unit | number + enum | latest proposed terms; unit is always the listing's unit |
+| pricePerUnit | number | latest proposed price per unit (min 1) |
+| currency | enum | default INR |
+| totalAmount | number | **server-computed** `quantity × pricePerUnit` (2 decimals) |
+| status | enum | `pending` / `countered` / `accepted` / `rejected` / `withdrawn` |
+| history | embedded array | immutable, append-only negotiation record (party, action, terms, note, at) |
 
-Indexes: `(produceListing, status)`, `(vendor, status)`, `(status, createdAt)`.
+Indexes: `(farmer, status, createdAt)`, `(vendor, status, createdAt)`,
+`(requirement, status)`, `(produceListing, status)`, plus a **unique partial
+index** on `(produceListing, requirement, farmer)` where
+`status ∈ [pending, countered]` — the database-level guard against duplicate
+live negotiation threads (double-click / retry).
 
 ### Order
 An agreement to transact between a farmer (seller) and a vendor (buyer).
@@ -189,6 +198,9 @@ An agreement to transact between a farmer (seller) and a vendor (buyer).
 
 Indexes: `(seller, status)`, `(buyer, status)`, `(produceListing, status)`,
 `(orderNumber)` unique sparse.
+
+The Order model is **reserved for Sprint 7** — accepted offers in Sprint 6 do
+not create orders.
 
 ## Deliberately deferred
 

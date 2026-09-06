@@ -70,7 +70,10 @@ Kisan-Vyapar/
 │   │   └── shared/          # brand
 │   ├── features/
 │   │   ├── auth/            # schemas, service, session store, guards
-│   │   └── profiles/        # schemas, service, completeness rules
+│   │   ├── profiles/        # schemas, service, completeness rules
+│   │   ├── buyer-requirements/ # schemas, service, lifecycle, vendor guard
+│   │   ├── matching/        # weights config, deterministic engine, service
+│   │   └── offers/          # negotiation: schemas, service, state machine
 │   ├── lib/
 │   │   ├── api/             # response/error/request helpers
 │   │   ├── client/          # typed client fetch helper
@@ -112,7 +115,13 @@ Future route segments under `src/app` (created when their first page lands):
   lifecycle, an intentional produce publish flow, and a deterministic,
   explainable matching engine (`features/buyer-requirements` +
   `features/matching`; algorithm in `docs/07-Algorithms/matching-guidance.md`).
-- **Planned (Sprint 6+):** offers/negotiation, orders, matching across
+- **Implemented (Sprint 6):** real negotiation — farmer offers against active
+  requirements for their published produce, immutable offer history, a
+  controlled PENDING/COUNTERED/ACCEPTED/REJECTED/WITHDRAWN lifecycle,
+  role-aware accept/counter/reject/withdraw, remaining-quantity tracking with
+  atomic acceptance, and a clean Sprint 7 order boundary (`features/offers`;
+  algorithm in `docs/07-Algorithms/negotiation.md`).
+- **Planned (Sprint 7+):** orders from accepted offers, matching across
   requirements in more detail.
 - **Future:** payments, logistics execution, AI advisor, multilingual engine,
   voice, ratings, admin tooling.

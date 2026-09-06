@@ -164,6 +164,54 @@ Zod-validated. Match DTOs expose only public data — never phone numbers, email
 or internal fields. An active-but-unmatched query returns `matches: []`, never
 sample data.
 
+### Offers / negotiation (Sprint 6)
+
+A negotiation thread references one **published** produce listing and one
+**active** buying requirement. Identity and ownership always come from the
+session: a farmer only sees offers on their own listings, a vendor only sees
+offers on their own requirements, and anyone else's negotiation reads as `404`.
+
+```text
+POST   /api/farmer/offers               farmer creates an offer          → 201
+GET    /api/farmer/offers               farmer: my negotiations (paged)  → 200
+GET    /api/farmer/offers/:id           farmer: negotiation detail       → 200 / 404
+POST   /api/farmer/offers/:id/counter   farmer counters                  → 200
+POST   /api/farmer/offers/:id/accept    farmer accepts                   → 200
+POST   /api/farmer/offers/:id/reject    farmer rejects                   → 200
+POST   /api/farmer/offers/:id/withdraw  farmer withdraws own proposal    → 200
+GET    /api/vendor/offers               vendor: offers on my requirements → 200 (paged, optional ?requirementId=)
+GET    /api/vendor/offers/:id           vendor: negotiation detail       → 200 / 404
+POST   /api/vendor/offers/:id/counter   vendor counters                  → 200
+POST   /api/vendor/offers/:id/accept    vendor accepts                   → 200
+POST   /api/vendor/offers/:id/reject    vendor rejects                   → 200
+POST   /api/vendor/offers/:id/withdraw  vendor withdraws own counter     → 200
+```
+
+Create body (Zod validated):
+
+```jsonc
+{
+  "produceId": "…",          // farmer's own published listing
+  "requirementId": "…",     // active requirement with matching crop
+  "quantity": 20,
+  "pricePerUnit": 2750,
+  "note": "optional"
+}
+```
+
+Counter body: `{ "quantity"?, "pricePerUnit"?, "note"? }` — at least one of
+quantity/price must change. The server verifies produce ownership, publish
+status, requirement activity, crop match, quantity ceilings (listing +
+remaining requirement) and duplicate-live-thread protection, and always
+recomputes `totalAmount`.
+
+Acceptance atomically consumes the negotiated quantity on the requirement
+(see [negotiation algorithm](../07-Algorithms/negotiation.md)); concurrent
+acceptances of the same remaining quantity fail safely with `409`. The offer
+DTO includes current terms, `history` (immutable steps), `turn` (whose
+response is awaited) and the counterparty's public name — never phones, emails
+or internal fields.
+
 ### Market prices (Sprint 3)
 
 ```text
@@ -207,13 +255,15 @@ Created in the sprint that implements them.
 
 ```text
 /api/auth/*            auth (register/login/logout/session)        [live]
-/api/profile           role-scoped profile                         [live]
-/api/farmer/*          farmer produce + matches                    [live]
-/api/vendor/*          vendor buying requirements + matches        [live]
-/api/admin/*           admin governance                            [planned]
-/api/market/prices     market/mandi prices (normalized)            [live]
-/api/offers            negotiation / offers                        [planned — Sprint 6]
-/api/orders            order lifecycle                             [planned]
+/api/profile           role-scoped profile                         [live]/api/farmer/*            farmer produce + matches + offers             [live]
+/api/vendor/*            vendor buying requirements + matches + offers [live]
+/api/admin/*             admin governance                            [planned]
+/api/market/prices       market/mandi prices (normalized)            [live]
+/api/orders              order lifecycle from accepted offers        [planned — Sprint 7]
+/api/logistics           transport estimates & tracking              [planned]
+/api/payments            payment lifecycle                           [future]
+/api/reviews             ratings and reviews                         [future]
+/api/notifications       user notifications                          [future]
 /api/logistics         transport estimates & tracking              [planned]
 /api/payments          payment lifecycle                           [future]
 /api/reviews           ratings and reviews                         [future]
@@ -226,8 +276,8 @@ Created in the sprint that implements them.
 | --- | --- |
 | `/api/auth/*` | public (register/login), signed-in (logout/session) |
 | `/api/profile` | signed-in farmer or vendor (role-scoped) |
-| `/api/farmer/*` | farmer (own listings only; matches for published own listings) |
-| `/api/vendor/*` | vendor (own requirements only; matches for active own requirements) |
+| `/api/farmer/*` | farmer (own listings only; matches for published own listings; offers on own listings) |
+| `/api/vendor/*` | vendor (own requirements only; matches for active own requirements; offers on own requirements) |
 | `/api/admin/*` | admin |
 
 Server enforcement: layouts/guards on pages (`requirePageRole`), explicit auth on
