@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Types } from "mongoose";
+import type { OfferStatus } from "@/constants/offer-statuses";
 import {
   OFFER_ACTION_LABELS,
   OFFER_PARTY_LABELS,
@@ -28,7 +29,6 @@ function fixtureContext(): OfferViewContext {
     },
     requirement: {
       _id: new Types.ObjectId(),
-      vendor: new Types.ObjectId(),
       crop: "tomato",
       quality: "a",
       quantity: 50,
@@ -50,7 +50,7 @@ function fixtureContext(): OfferViewContext {
 
 function offerDoc() {
   const now = new Date("2026-09-10T09:10:00Z");
-  return {
+  const base = {
     _id: new Types.ObjectId(),
     produceListing: new Types.ObjectId(),
     requirement: new Types.ObjectId(),
@@ -93,6 +93,21 @@ function offerDoc() {
     ],
     createdAt: now,
     updatedAt: now,
+  };
+  return base as {
+    _id: Types.ObjectId;
+    produceListing: Types.ObjectId;
+    requirement: Types.ObjectId;
+    farmer: Types.ObjectId;
+    vendor: Types.ObjectId;
+    quantity: number;
+    unit: "quintal";
+    pricePerUnit: number;
+    totalAmount: number;
+    status: OfferStatus;
+    history: typeof base.history;
+    createdAt: Date;
+    updatedAt: Date;
   };
 }
 

@@ -626,6 +626,7 @@ export async function createOffer(
         validated.quantity,
         produce.unit,
         validated.pricePerUnit,
+        validated.note,
       ),
     ],
   });

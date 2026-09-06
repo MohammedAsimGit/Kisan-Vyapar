@@ -16,6 +16,12 @@ export const createOfferSchema = z.object({
     .number({ error: "Please enter a price per unit." })
     .positive("Price must be more than zero.")
     .max(100_000_000, "Price is too large."),
+  note: z
+    .string()
+    .trim()
+    .max(400, "Note must not exceed 400 characters.")
+    .transform((value) => (value === "" ? undefined : value))
+    .optional(),
 });
 
 export type CreateOfferInput = z.infer<typeof createOfferSchema>;
@@ -40,8 +46,8 @@ export const counterOfferSchema = z
       .string()
       .trim()
       .max(400, "Note must not exceed 400 characters.")
-      .optional()
-      .or(z.literal("").transform(() => undefined)),
+      .transform((value) => (value === "" ? undefined : value))
+      .optional(),
   })
   .superRefine((value, context) => {
     if (value.quantity === undefined && value.pricePerUnit === undefined) {
