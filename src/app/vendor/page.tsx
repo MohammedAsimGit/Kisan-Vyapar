@@ -3,12 +3,12 @@ import Link from "next/link";
 import {
   Check,
   ClipboardList,
+  Handshake,
   Package,
   Plus,
   Store,
   TrendingUp,
   Truck,
-  Users,
 } from "lucide-react";
 import { Badge, EmptyState, linkButtonClass, PageHeader } from "@/components/ui";
 import { RequirementCard } from "@/components/requirements/requirement-card";
@@ -16,6 +16,7 @@ import { greetingForHour } from "@/lib/utils/greeting";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
 import { getVendorProfile, getVendorProfileRecordId } from "@/features/profiles/profile-service";
 import { listVendorRequirements } from "@/features/buyer-requirements/buyer-requirement-service";
+import { countPendingOffersByRequirement } from "@/features/offers/offer-service";
 import { cn } from "@/lib/utils/cn";
 
 export const metadata: Metadata = {
@@ -28,9 +29,14 @@ export default async function VendorDashboardPage() {
   const user = await requirePageUser();
   const profile = await getVendorProfile(user.id);
   const vendorProfileId = await getVendorProfileRecordId(user.id);
-  const result = vendorProfileId
-    ? await listVendorRequirements(vendorProfileId)
-    : { requirements: [], counts: null };
+  const [result, pendingCounts] = await Promise.all([
+    vendorProfileId
+      ? listVendorRequirements(vendorProfileId)
+      : Promise.resolve({ requirements: [], counts: null }),
+    vendorProfileId
+      ? countPendingOffersByRequirement(vendorProfileId)
+      : Promise.resolve<Record<string, number>>({}),
+  ]);
   const counts = result.counts ?? {
     active: 0,
     paused: 0,
@@ -38,6 +44,10 @@ export default async function VendorDashboardPage() {
     expired: 0,
     cancelled: 0,
   };
+  const pendingOffers = Object.values(pendingCounts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
   const recent = result.requirements.slice(0, 3);
 
   const firstName = user.fullName.split(/\s+/)[0] ?? user.fullName;
@@ -83,8 +93,18 @@ export default async function VendorDashboardPage() {
             <Stat label="Active" value={counts.active} />
             <Stat label="Paused" value={counts.paused} />
             <Stat label="Fulfilled" value={counts.fulfilled} />
-            <Stat label="Closed" value={counts.expired + counts.cancelled} />
+            <Stat label="New offers" value={pendingOffers} />
           </dl>
+
+          {pendingOffers > 0 ? (
+            <Link
+              href="/vendor/offers"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl border border-accent/30 bg-accent-soft px-4 py-3 text-sm font-semibold text-accent-foreground transition-colors hover:bg-accent-soft/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Handshake className="size-4" />
+              {pendingOffers} pending {pendingOffers === 1 ? "offer" : "offers"} waiting — respond now
+            </Link>
+          ) : null}
         </div>
       </section>
 
@@ -156,9 +176,13 @@ export default async function VendorDashboardPage() {
               }
             />
             <SetupRow
+              done={pendingOffers > 0}
               label="Match and negotiate"
-              detail="Offers and negotiation arrive in the next update"
-              pending
+              detail={
+                pendingOffers > 0
+                  ? `${pendingOffers} pending ${pendingOffers === 1 ? "offer" : "offers"} — respond from the Offers tab`
+                  : "Farmers can send you offers — respond from the Offers tab"
+              }
             />
           </ul>
         </div>
@@ -181,10 +205,11 @@ export default async function VendorDashboardPage() {
             title="Requirements"
             body="Manage what you want to buy."
           />
-          <QuickAction
-            icon={<Users className="size-5" />}
-            title="Farmers"
-            body="See matching farmers inside each active requirement."
+          <QuickActionLink
+            href="/vendor/offers"
+            icon={<Handshake className="size-5" />}
+            title="Offers"
+            body="Respond to farmers negotiating on your requirements."
           />
           <QuickAction
             icon={<Package className="size-5" />}

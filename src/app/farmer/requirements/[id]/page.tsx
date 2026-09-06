@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Sprout, Store } from "lucide-react";
-import { Button, EmptyState } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
 import { RequirementStatusBadge } from "@/components/requirements/requirement-status-badge";
 import { RequirementFacts } from "@/components/requirements/requirement-facts";
 import { MatchExplain } from "@/components/matching/match-score";
@@ -91,6 +91,14 @@ export default async function FarmerRequirementDetailPage({ params }: RouteConte
           requiredBy={requirement.requiredBy}
           notes={requirement.notes}
         />
+
+        {requirement.remainingQuantity < requirement.quantity ? (
+          <p className="mt-4 rounded-xl border border-info-border bg-info-bg/60 px-3.5 py-2.5 text-sm leading-6 text-info-fg">
+            {requirement.quantity - requirement.remainingQuantity}{" "}
+            {requirement.unitLabel} already committed through accepted offers —{" "}
+            {requirement.remainingQuantity} {requirement.unitLabel} still needed.
+          </p>
+        ) : null}
       </div>
 
       <section className="space-y-5">
@@ -136,9 +144,12 @@ export default async function FarmerRequirementDetailPage({ params }: RouteConte
                       >
                         All buyer requirements for this crop
                       </Link>
-                      <Button variant="outline" disabled title="Negotiation arrives in the next update">
-                        Make Offer · Next update
-                      </Button>
+                      <Link
+                        href={`/farmer/offers/new?produceId=${row.listing.id}&requirementId=${requirement.id}`}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-base font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      >
+                        Make Offer
+                      </Link>
                     </div>
                   </div>
                   <MatchExplain match={row.match} className="lg:shrink-0 lg:flex-col-reverse lg:gap-3" />

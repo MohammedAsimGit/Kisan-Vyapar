@@ -16,14 +16,14 @@ const DASHBOARD_NAV: Record<UserRole, NavItem[]> = {
   farmer: [
     { label: "Home", href: "/farmer" },
     { label: "My Produce", href: "/farmer/produce" },
-    { label: "Buyers", href: "/farmer/buyers", planned: true },
+    { label: "Buyers", href: "/farmer/requirements" },
+    { label: "Negotiations", href: "/farmer/offers" },
     { label: "Orders", href: "/farmer/orders", planned: true },
-    { label: "Profile", href: "/farmer/profile", planned: true },
   ],
   vendor: [
     { label: "Home", href: "/vendor" },
-    { label: "Requirements", href: "/vendor/requirements", planned: true },
-    { label: "Farmers", href: "/vendor/farmers", planned: true },
+    { label: "Requirements", href: "/vendor/requirements" },
+    { label: "Offers", href: "/vendor/offers" },
     { label: "Orders", href: "/vendor/orders", planned: true },
     { label: "Profile", href: "/vendor/profile", planned: true },
   ],

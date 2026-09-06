@@ -38,6 +38,8 @@ export interface RequirementSummaryView {
   unitLabel: string;
   targetPriceMin: number;
   targetPriceMax: number;
+  /** Quantity still needed (total − committed by accepted offers). */
+  remainingQuantity: number;
   locationText?: string;
   requiredBy: string;
   notes?: string;

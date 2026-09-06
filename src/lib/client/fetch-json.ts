@@ -59,6 +59,10 @@ function describeError(envelope: ApiEnvelope | undefined): {
       ["targetPriceMax", "Maximum price"],
       ["requiredBy", "Required-by date"],
       ["notes", "Notes"],
+      ["produceId", "Crop"],
+      ["requirementId", "Buyer requirement"],
+      ["pricePerUnit", "Price per unit"],
+      ["note", "Note"],
     ]);
 
     const readable = issues

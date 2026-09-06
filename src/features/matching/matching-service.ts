@@ -185,6 +185,7 @@ function requirementSummaryView(
     unitLabel: view.unitLabel,
     targetPriceMin: view.targetPriceMin,
     targetPriceMax: view.targetPriceMax,
+    remainingQuantity: view.remainingQuantity,
     locationText: view.locationText || undefined,
     requiredBy: view.requiredBy,
     notes: view.notes,

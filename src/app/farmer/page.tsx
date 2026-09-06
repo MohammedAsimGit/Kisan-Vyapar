@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   CalendarDays,
-  ClipboardList,
+  Handshake,
   Package,
   Plus,
   Sprout,
@@ -143,10 +143,11 @@ export default async function FarmerDashboardPage() {
             title="Buyer Requirements"
             body="Real buyers looking for your published crops."
           />
-          <QuickAction
-            icon={<ClipboardList className="size-5" />}
-            title="My Orders"
-            body="Track every sale from offer to payment."
+          <QuickActionLink
+            href="/farmer/offers"
+            icon={<Handshake className="size-5" />}
+            title="My Negotiations"
+            body="Offers you sent and every counter you've received."
           />
         </div>
       </section>

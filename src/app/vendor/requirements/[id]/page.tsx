@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, CalendarDays, Pencil, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Inbox, Pencil, Users } from "lucide-react";
 import { Badge, Button, EmptyState, linkButtonClass } from "@/components/ui";
 import { RequirementStatusBadge } from "@/components/requirements/requirement-status-badge";
 import { RequirementFacts } from "@/components/requirements/requirement-facts";
@@ -13,6 +13,7 @@ import { getVendorProfileRecordId } from "@/features/profiles/profile-service";
 import { objectIdSchema } from "@/lib/validation";
 import { getOwnedBuyerRequirement } from "@/features/buyer-requirements/buyer-requirement-service";
 import { getMatchesForRequirement } from "@/features/matching/matching-service";
+import { countPendingOffersByRequirement } from "@/features/offers/offer-service";
 import {
   matchQueryFromPageParams,
   MATCH_SORT_VALUES,
@@ -65,9 +66,14 @@ export default async function VendorRequirementDetailPage({
 
   const query = await matchQueryFromPageParams(searchParams);
   const isActive = requirement.status === "active";
-  const matches = isActive
-    ? await getMatchesForRequirement(id, vendorProfileId!, query)
-    : null;
+  const [matches, pendingOffers] = await Promise.all([
+    isActive
+      ? getMatchesForRequirement(id, vendorProfileId!, query)
+      : Promise.resolve(null),
+    countPendingOffersByRequirement(vendorProfileId!).then(
+      (counts) => counts[id] ?? 0,
+    ),
+  ]);
 
   const editable = requirement.status === "active" || requirement.status === "paused";
 
@@ -111,6 +117,27 @@ export default async function VendorRequirementDetailPage({
           requiredBy={requirement.requiredBy}
           notes={requirement.notes}
         />
+
+        {requirement.remainingQuantity < requirement.quantity ? (
+          <p className="mt-4 rounded-xl border border-info-border bg-info-bg/60 px-3.5 py-2.5 text-sm leading-6 text-info-fg">
+            {requirement.quantity - requirement.remainingQuantity}{" "}
+            {requirement.unitLabel} already committed through accepted offers —{" "}
+            {requirement.remainingQuantity} {requirement.unitLabel} still needed.
+          </p>
+        ) : null}
+
+        {pendingOffers > 0 ? (
+          <Link
+            href={`/vendor/offers?requirementId=${requirement.id}`}
+            className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary-soft/40 px-4 py-3.5 transition-colors hover:bg-primary-soft/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-primary-soft-fg">
+              <Inbox className="size-4" />
+              {pendingOffers} pending {pendingOffers === 1 ? "offer" : "offers"} on this requirement
+            </span>
+            <ArrowRight className="size-4 text-primary-soft-fg" />
+          </Link>
+        ) : null}
 
         <p className="mt-5 flex items-center gap-1.5 text-xs text-muted-foreground">
           <CalendarDays className="size-3.5" />

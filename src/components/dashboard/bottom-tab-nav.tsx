@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ClipboardList,
+  Handshake,
   Home,
   Package,
   Sprout,
@@ -24,12 +25,12 @@ const ROLE_TABS: Record<"farmer" | "vendor", BottomTab[]> = {
     { label: "Home", href: "/farmer", icon: Home },
     { label: "My Produce", href: "/farmer/produce", icon: Sprout },
     { label: "Buyers", href: "/farmer/requirements", icon: Users },
-    { label: "Orders", icon: ClipboardList, planned: true },
+    { label: "Offers", href: "/farmer/offers", icon: Handshake },
   ],
   vendor: [
     { label: "Home", href: "/vendor", icon: Home },
     { label: "Requirements", href: "/vendor/requirements", icon: ClipboardList },
-    { label: "Farmers", icon: Users, planned: true },
+    { label: "Offers", href: "/vendor/offers", icon: Handshake },
     { label: "Orders", icon: Package, planned: true },
   ],
 };

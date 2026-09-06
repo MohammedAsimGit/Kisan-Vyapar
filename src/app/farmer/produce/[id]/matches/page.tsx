@@ -165,14 +165,17 @@ export default async function ProduceMatchesPage({
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Link
                         href={`/farmer/requirements/${row.requirement.id}`}
-                        className={linkButtonClass("primary", "md")}
+                        className={linkButtonClass("outline", "md")}
                       >
                         View requirement
+                      </Link>
+                      <Link
+                        href={`/farmer/offers/new?produceId=${listing.id}&requirementId=${row.requirement.id}`}
+                        className={linkButtonClass("primary", "md")}
+                      >
+                        Make Offer
                         <ArrowRight className="size-4" />
                       </Link>
-                      <Button variant="outline" disabled title="Negotiation arrives in the next update">
-                        Make Offer · Next update
-                      </Button>
                     </div>
                   </div>
                   <MatchExplain match={row.match} className="lg:shrink-0 lg:flex-col-reverse lg:gap-3" />
