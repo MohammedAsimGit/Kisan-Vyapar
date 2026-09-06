@@ -142,10 +142,12 @@ export function RequirementForm({
       requiredBy,
       notes: notes.trim() || undefined,
       location: {
-        village: village.trim() || undefined,
-        district: district.trim(),
-        state: state.trim(),
-        pincode: pincode.trim() || undefined,
+        address: {
+          village: village.trim() || undefined,
+          district: district.trim(),
+          state: state.trim(),
+          pincode: pincode.trim() || undefined,
+        },
       },
     };
 

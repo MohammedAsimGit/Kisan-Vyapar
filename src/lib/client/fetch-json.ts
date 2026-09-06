@@ -50,14 +50,24 @@ function describeError(envelope: ApiEnvelope | undefined): {
       ["businessType", "Business type"],
       ["district", "District"],
       ["state", "State"],
+      ["crop", "Crop"],
+      ["variety", "Variety"],
+      ["quality", "Quality / grade"],
+      ["quantity", "Quantity"],
+      ["unit", "Unit"],
+      ["targetPriceMin", "Minimum price"],
+      ["targetPriceMax", "Maximum price"],
+      ["requiredBy", "Required-by date"],
+      ["notes", "Notes"],
     ]);
 
     const readable = issues
       .slice(0, 2)
       .map((issue) => {
-        const field = Array.isArray(issue.path)
-          ? String(issue.path[0] ?? "")
-          : "";
+        const segments = Array.isArray(issue.path) ? issue.path : [];
+        const field = String(
+          segments[segments.length - 1] ?? "",
+        );
         const label = fieldLabels.get(field) ?? (field ? `Field "${field}"` : "");
         return label ? `${label}: ${issue.message}` : issue.message;
       })
