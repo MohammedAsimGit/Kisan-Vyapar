@@ -231,6 +231,13 @@ export async function updateBuyerRequirementFields(
     throw new ConflictError(editCheck.message);
   }
 
+  const allocated = current.allocatedQuantity ?? 0;
+  if (patch.quantity !== undefined && patch.quantity < allocated) {
+    throw new ConflictError(
+      "The new quantity cannot be less than the quantity already committed to accepted offers.",
+    );
+  }
+
   const currentLocation = current.location ?? {};
   const currentAddress = currentLocation.address ?? {};
   const currentGeo = currentLocation.geo;

@@ -29,6 +29,10 @@ export interface BuyerRequirementView {
   quantity: number;
   unit: MeasurementUnit;
   unitLabel: string;
+  /** Quantity already committed via accepted offers (0 until any are accepted). */
+  allocatedQuantity: number;
+  /** quantity − allocatedQuantity, in the requirement's own unit. */
+  remainingQuantity: number;
   targetPriceMin: number;
   targetPriceMax: number;
   currency: string;
@@ -48,6 +52,7 @@ type RequirementDocShape = {
   quality?: QualityGrade;
   quantity: number;
   unit: MeasurementUnit;
+  allocatedQuantity?: number;
   targetPriceMin: number;
   targetPriceMax: number;
   currency?: string;
@@ -106,6 +111,8 @@ export function toBuyerRequirementView(doc: RequirementDocShape): BuyerRequireme
     quantity: doc.quantity,
     unit: doc.unit,
     unitLabel: REQUIREMENT_UNIT_LABELS[doc.unit] ?? doc.unit,
+    allocatedQuantity: doc.allocatedQuantity ?? 0,
+    remainingQuantity: Math.max(0, doc.quantity - (doc.allocatedQuantity ?? 0)),
     targetPriceMin: doc.targetPriceMin,
     targetPriceMax: doc.targetPriceMax,
     currency: doc.currency ?? "INR",

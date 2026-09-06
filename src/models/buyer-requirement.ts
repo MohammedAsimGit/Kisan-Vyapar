@@ -25,6 +25,8 @@ export interface BuyerRequirement {
   quality: QualityGrade;
   quantity: number;
   unit: MeasurementUnit;
+  /** Quantity already committed via accepted offers; remaining = quantity − allocated. */
+  allocatedQuantity: number;
   targetPriceMin: number;
   targetPriceMax: number;
   currency: Currency;
@@ -73,6 +75,11 @@ const buyerRequirementSchema = new Schema(
       type: String,
       enum: MEASUREMENT_UNIT_VALUES,
       required: true,
+    },
+    allocatedQuantity: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     targetPriceMin: {
       type: Number,
