@@ -24,6 +24,9 @@ export interface ProduceListingView {
   cropEmoji?: string;
   variety?: string;
   quantity: number;
+  /** Quantity committed through accepted agreements — honest supply still available. */
+  committedQuantity: number;
+  availableQuantity: number;
   unit: MeasurementUnit;
   unitLabel: string;
   quality: QualityGrade;
@@ -43,6 +46,7 @@ type ListingDocShape = {
   variety?: string;
   quality?: QualityGrade;
   quantity: number;
+  committedQuantity?: number;
   unit: MeasurementUnit;
   expectedHarvestDate?: Date | null;
   pricePerUnit?: number | null;
@@ -85,6 +89,7 @@ export function produceLocationText(location: ListingDocShape["location"]): stri
 export function toProduceListingView(doc: ListingDocShape): ProduceListingView {
   const cropDef = getCropById(doc.crop);
   const address = doc.location?.address;
+  const committedQuantity = Math.max(0, doc.committedQuantity ?? 0);
 
   return {
     id: String(doc._id),
@@ -93,6 +98,8 @@ export function toProduceListingView(doc: ListingDocShape): ProduceListingView {
     cropEmoji: cropDef?.emoji,
     variety: doc.variety,
     quantity: doc.quantity,
+    committedQuantity,
+    availableQuantity: Math.max(0, doc.quantity - committedQuantity),
     unit: doc.unit,
     unitLabel: UNIT_LABELS[doc.unit] ?? doc.unit,
     quality: doc.quality ?? "ungraded",

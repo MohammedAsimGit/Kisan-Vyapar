@@ -97,6 +97,7 @@ A farmer's structured crop record (Sprint 2).
 | variety | string | optional; cleared when incompatible with crop |
 | quality | enum | `a` / `b` / `c` / `ungraded` (default `ungraded`) |
 | quantity / unit | number + enum | required (min 1); kg/quintal/tonne |
+| committedQuantity | number | default 0; incremented atomically when an offer is accepted (Sprint 6) — the supply already locked by agreements; available = quantity − committed |
 | pricePerUnit | number | **optional** — intentionally unset until market-price workflow |
 | currency | enum | default INR |
 | images | string[] | reserved (storage later) |

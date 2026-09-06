@@ -57,7 +57,7 @@ export function NegotiationActions({
     return Math.round(counterQuantityValue * counterPriceValue * 100) / 100;
   }, [counterQuantityValue, counterPriceValue]);
 
-  const counterOverListing = counterQuantityValue > offer.produce.quantity;
+  const counterOverListing = counterQuantityValue > offer.produce.availableQuantity;
   const counterOverRemaining = counterQuantityValue > offer.requirement.remainingQuantity;
   const counterValid =
     counterQuantityValue > 0 &&
@@ -178,7 +178,7 @@ export function NegotiationActions({
           </div>
           {counterOverListing ? (
             <p role="alert" className="text-sm text-red-600">
-              The listing has {offer.produce.quantity} {offer.unitLabel} — you can&apos;t offer more.
+              The listing has {offer.produce.availableQuantity} {offer.unitLabel} left to offer — you can&apos;t offer more.
             </p>
           ) : null}
           {!counterOverListing && counterOverRemaining ? (

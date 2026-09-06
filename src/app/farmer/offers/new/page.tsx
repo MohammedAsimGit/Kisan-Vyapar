@@ -102,8 +102,25 @@ export default async function NewOfferPage({
     );
   }
 
+  if (produce.availableQuantity <= 0) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <EmptyState
+          icon={<CheckCircle2 className="size-6" />}
+          title="This crop is fully committed"
+          description="The full quantity of this listing is already committed through accepted agreements, so it can't be offered again. Publish a fresh listing for new offers."
+          action={
+            <Link href={`/farmer/produce/${produce.id}`} className={linkButtonClass("primary", "lg")}>
+              Go to this crop
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
+
   const defaultQuantity = Math.min(
-    produce.quantity,
+    produce.availableQuantity,
     requirement.remainingQuantity,
   );
 
@@ -115,6 +132,8 @@ export default async function NewOfferPage({
         cropEmoji: produce.cropEmoji,
         variety: produce.variety,
         quantity: produce.quantity,
+        availableQuantity: produce.availableQuantity,
+        committedQuantity: produce.committedQuantity,
         unitLabel: produce.unitLabel,
         askingPricePerUnit: produce.askingPrice,
         locationText: produce.locationText || undefined,

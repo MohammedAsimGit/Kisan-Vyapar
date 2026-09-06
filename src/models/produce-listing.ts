@@ -24,6 +24,8 @@ export interface ProduceListing {
   variety?: string;
   quality: QualityGrade;
   quantity: number;
+  /** Quantity already committed through accepted agreements (Sprint 6). */
+  committedQuantity?: number;
   unit: MeasurementUnit;
   pricePerUnit?: number;
   currency: Currency;
@@ -67,6 +69,11 @@ const produceListingSchema = new Schema(
       type: Number,
       required: true,
       min: 1,
+    },
+    committedQuantity: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     unit: {
       type: String,

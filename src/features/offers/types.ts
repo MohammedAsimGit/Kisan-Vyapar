@@ -59,6 +59,7 @@ export interface OfferProduceView {
   quality: QualityGrade;
   qualityLabel: string;
   quantity: number;
+  availableQuantity: number;
   unit: MeasurementUnit;
   unitLabel: string;
   askingPricePerUnit?: number;
@@ -145,6 +146,7 @@ export interface OfferViewContext {
     variety?: string;
     quality?: QualityGrade;
     quantity: number;
+    committedQuantity?: number;
     unit: MeasurementUnit;
     pricePerUnit?: number | null;
     status: ProduceListingStatus;
@@ -267,6 +269,7 @@ export function toOfferView(doc: OfferDocShape, context: OfferViewContext): Offe
       quality: context.produce.quality ?? "ungraded",
       qualityLabel: produceView.qualityLabel,
       quantity: produceView.quantity,
+      availableQuantity: produceView.availableQuantity,
       unit: produceView.unit,
       unitLabel: produceView.unitLabel,
       askingPricePerUnit: produceView.askingPrice,

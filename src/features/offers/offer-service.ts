@@ -139,6 +139,14 @@ export function remainingQuantityInUnit(
   return quintals / (QUINTAL_CONVERSION[targetUnit] ?? 1);
 }
 
+/** Quantity not yet locked by an accepted agreement, in listing units. */
+export function availableQuantityOf(produce: {
+  quantity: number;
+  committedQuantity?: number;
+}): number {
+  return Math.max(0, produce.quantity - (produce.committedQuantity ?? 0));
+}
+
 function startOfTodayUtc(): Date {
   const now = new Date();
   return new Date(
@@ -201,6 +209,7 @@ interface LeanProduceDoc {
   variety?: string;
   quality?: string;
   quantity: number;
+  committedQuantity?: number;
   unit: MeasurementUnit;
   pricePerUnit?: number | null;
   expectedHarvestDate?: Date | null;
@@ -261,8 +270,14 @@ function checkProposal({
   if (produce.crop !== requirement.crop) {
     return `The requirement is for ${cropLabel(requirement.crop)}, not ${cropLabel(produce.crop)}.`;
   }
-  if (quantity > produce.quantity) {
-    return `Your listing has ${formatQuantity(produce.quantity)} ${UNIT_LABELS[produce.unit] ?? produce.unit} available; you offered ${formatQuantity(quantity)} ${UNIT_LABELS[produce.unit] ?? produce.unit}.`;
+  const available = availableQuantityOf(produce);
+  const unitLabel = UNIT_LABELS[produce.unit] ?? produce.unit;
+  if (quantity > available) {
+    const committed = produce.committedQuantity ?? 0;
+    if (committed > 0) {
+      return `Already committed ${formatQuantity(committed)} ${unitLabel} of your listing to other agreements, so ${formatQuantity(available)} ${unitLabel} remain available. You offered ${formatQuantity(quantity)} ${unitLabel}.`;
+    }
+    return `Your listing has ${formatQuantity(produce.quantity)} ${unitLabel} available; you offered ${formatQuantity(quantity)} ${unitLabel}.`;
   }
   const remaining = roundTo(
     remainingQuantityInUnit(requirement, produce.unit),
@@ -735,15 +750,18 @@ export async function acceptOffer(
     throw new ConflictError(domainCheck);
   }
 
-  // Concurrency gate: atomically consume the negotiated quantity on the
-  // requirement itself. With two offers for the same remaining quantity, only
-  // the first acceptance can pass — the second sees an exhausted requirement
-  // and fails safely (no negative remaining, no double allocation).
+  // Concurrency gates: atomically consume the quantity on BOTH the demand
+  // side (requirement) and the supply side (produce listing). Each $expr
+  // conditional update is atomic per document, so concurrent acceptances
+  // serialise and only those that fit the remaining capacity pass — no
+  // negative remaining, no double allocation, no over-committed produce.
   const consumeInRequirementUnit = roundTo(
     toQuintalQuantity(doc.quantity, doc.unit) /
       (QUINTAL_CONVERSION[requirement.unit] ?? 1),
     6,
   );
+  const consumeInProduceUnit = doc.quantity; // offer unit is always the listing's
+
   const reserved = await BuyerRequirementModel.updateOne(
     {
       _id: requirement._id,
@@ -768,6 +786,35 @@ export async function acceptOffer(
     );
   }
 
+  const reservedProduce = await ProduceListingModel.updateOne(
+    {
+      _id: produce._id,
+      $expr: {
+        $lte: [
+          {
+            $add: [
+              { $ifNull: ["$committedQuantity", 0] },
+              consumeInProduceUnit,
+            ],
+          },
+          "$quantity",
+        ],
+      },
+    },
+    { $inc: { committedQuantity: consumeInProduceUnit } },
+  );
+  if (reservedProduce.matchedCount === 0) {
+    // Another acceptance already committed this listing's supply — revert the
+    // requirement reservation so nothing stays half-allocated.
+    await BuyerRequirementModel.updateOne(
+      { _id: requirement._id, allocatedQuantity: { $gte: consumeInRequirementUnit } },
+      { $inc: { allocatedQuantity: -consumeInRequirementUnit } },
+    );
+    throw new ConflictError(
+      "Another agreement just used up the remaining quantity of this produce listing. Please refresh and check availability.",
+    );
+  }
+
   const accepted = (await OfferModel.findOneAndUpdate(
     { _id: offerId, status: doc.status },
     {
@@ -786,11 +833,15 @@ export async function acceptOffer(
   ).lean()) as unknown as LeanOfferDoc | null;
 
   if (!accepted) {
-    // Narrow race: another action changed the offer between reserve and
-    // accept. Revert the reservation so the requirement is not over-committed.
+    // Narrow race: another action changed the offer between reservation and
+    // accept. Revert both reservations so nothing is over-committed.
     await BuyerRequirementModel.updateOne(
       { _id: requirement._id, allocatedQuantity: { $gte: consumeInRequirementUnit } },
       { $inc: { allocatedQuantity: -consumeInRequirementUnit } },
+    );
+    await ProduceListingModel.updateOne(
+      { _id: produce._id, committedQuantity: { $gte: consumeInProduceUnit } },
+      { $inc: { committedQuantity: -consumeInProduceUnit } },
     );
     throw new ConflictError(
       "This negotiation changed while accepting. Please refresh and try again.",

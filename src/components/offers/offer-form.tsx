@@ -13,6 +13,8 @@ export interface OfferFormProduce {
   cropEmoji?: string;
   variety?: string;
   quantity: number;
+  availableQuantity: number;
+  committedQuantity: number;
   unitLabel: string;
   askingPricePerUnit?: number;
   locationText?: string;
@@ -87,7 +89,7 @@ export function OfferForm({
     return Math.round(quantityValue * priceValue * 100) / 100;
   }, [quantityValue, priceValue]);
 
-  const overListing = quantityValue > produce.quantity;
+  const overListing = quantityValue > produce.availableQuantity;
   const overRemaining = quantityValue > requirement.remainingQuantity;
 
   const canSave =
@@ -175,7 +177,12 @@ export function OfferForm({
               Your listing
             </dt>
             <dd className="mt-0.5 font-medium text-foreground">
-              {produce.quantity} {produce.unitLabel}
+              {produce.availableQuantity} {produce.unitLabel}
+              {produce.committedQuantity > 0 ? (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({produce.committedQuantity} committed to other agreements)
+                </span>
+              ) : null}
             </dd>
           </div>
           <div>
@@ -206,7 +213,7 @@ export function OfferForm({
               label={`Quantity (${produce.unitLabel})`}
               htmlFor="quantity"
               hint={`You can offer up to ${Math.min(
-                produce.quantity,
+                produce.availableQuantity,
                 requirement.remainingQuantity,
               )} ${produce.unitLabel}.`}
               required
@@ -252,7 +259,10 @@ export function OfferForm({
 
           {overListing ? (
             <p role="alert" className="text-sm text-red-600">
-              Your listing has {produce.quantity} {produce.unitLabel} available —
+              Your listing has {produce.availableQuantity} {produce.unitLabel} left to offer
+              {produce.committedQuantity > 0
+                ? ` (${produce.committedQuantity} already committed to other agreements)`
+                : ""} —
               you can offer at most that much.
             </p>
           ) : null}

@@ -49,6 +49,8 @@ describe("produce DTO", () => {
       cropEmoji: "🍅",
       variety: "Hybrid",
       quantity: 20,
+      committedQuantity: 0,
+      availableQuantity: 20,
       unit: "quintal",
       unitLabel: "Quintal",
       quality: "a",
@@ -78,5 +80,33 @@ describe("produce DTO", () => {
       status: "active",
     });
     expect(view.cropName).toBe("future-crop");
+  });
+
+  it("reports honest available quantity after commitments", () => {
+    const view = toProduceListingView({
+      _id: "64b000000000000000000003",
+      crop: "tomato",
+      quantity: 20,
+      committedQuantity: 12,
+      unit: "quintal",
+      quality: "a",
+      status: "active",
+    });
+    expect(view.quantity).toBe(20);
+    expect(view.committedQuantity).toBe(12);
+    expect(view.availableQuantity).toBe(8);
+  });
+
+  it("clamps available quantity at zero", () => {
+    const view = toProduceListingView({
+      _id: "64b000000000000000000004",
+      crop: "tomato",
+      quantity: 5,
+      committedQuantity: 9,
+      unit: "quintal",
+      quality: "a",
+      status: "active",
+    });
+    expect(view.availableQuantity).toBe(0);
   });
 });

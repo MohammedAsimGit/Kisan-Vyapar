@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  availableQuantityOf,
   canActOnOffer,
   computeTotalAmount,
   remainingQuantityInUnit,
@@ -24,6 +25,21 @@ describe("toQuintalQuantity", () => {
     expect(toQuintalQuantity(50, "quintal")).toBe(50);
     expect(toQuintalQuantity(5000, "kg")).toBe(50);
     expect(toQuintalQuantity(5, "tonne")).toBe(50);
+  });
+});
+
+describe("availableQuantityOf", () => {
+  it("defaults to the full listing quantity when nothing is committed", () => {
+    expect(availableQuantityOf({ quantity: 20 })).toBe(20);
+    expect(availableQuantityOf({ quantity: 20, committedQuantity: 0 })).toBe(20);
+  });
+
+  it("subtracts committed quantity from the listing", () => {
+    expect(availableQuantityOf({ quantity: 20, committedQuantity: 12 })).toBe(8);
+  });
+
+  it("never goes negative", () => {
+    expect(availableQuantityOf({ quantity: 5, committedQuantity: 9 })).toBe(0);
   });
 });
 

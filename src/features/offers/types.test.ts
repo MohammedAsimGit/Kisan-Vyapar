@@ -18,6 +18,7 @@ function fixtureContext(): OfferViewContext {
       variety: "Hybrid",
       quality: "a",
       quantity: 20,
+      committedQuantity: 5,
       unit: "quintal",
       pricePerUnit: 2750,
       status: "active",
@@ -128,6 +129,12 @@ describe("toOfferView", () => {
     const view = toOfferView(offerDoc(), fixtureContext());
     expect(view.requirement.quantity).toBe(50);
     expect(view.requirement.remainingQuantity).toBe(30);
+  });
+
+  it("exposes available produce after commitments", () => {
+    const view = toOfferView(offerDoc(), fixtureContext());
+    expect(view.produce.quantity).toBe(20);
+    expect(view.produce.availableQuantity).toBe(15);
   });
 
   it("keeps real coordinates in the location context", () => {

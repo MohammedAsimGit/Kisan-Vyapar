@@ -91,8 +91,13 @@ Before an offer is created the service verifies, in order:
    cancelled) and its `requiredBy` has not passed.
 4. **Crop matches**: a tomato listing cannot be offered against an onion
    requirement (strict catalogue-id comparison, no fuzzy guessing).
-5. **Quantity is admissible**:
-   - `offer.quantity ≤ listing.quantity` (same unit), and
+5. **Quantity is admissible** (both ceilings enforced server-side):
+   - `offer.quantity ≤ listing available` (same unit), where available =
+     `listing.quantity − listing.committedQuantity`. A listing's
+     `committedQuantity` is the supply already locked by **accepted**
+     agreements, so a listing that is fully committed (available = 0) can no
+     longer receive offers. This stops the same produce from being
+     double-counted across separate negotiations.
    - `offer.quantity ≤ requirement remaining` (units normalized via the same
      quintal conversion the matching engine uses). Partial supply is
      supported — offering 20 of a 50-QTL need is fine.
@@ -128,16 +133,23 @@ Requirement: 50 QTL, 30 remaining
 Offer A: 30 QTL   Offer B: 30 QTL   → both try to accept simultaneously
 ```
 
-Acceptance runs as a two-step sequence with an atomic resource gate:
+Acceptance runs as a short sequence with an atomic resource gate on **both**
+the demand and supply side:
 
 1. **Reserve on the requirement** with a single atomic conditional update:
    `{ status: active, $expr: allocatedQuantity + offered ≤ quantity }` →
    `$inc allocatedQuantity`. MongoDB serializes this update, so only one of the
-   two acceptances can match; the loser gets a `409 ConflictError` and nothing
-   is reserved. There is no way to reach a negative remaining quantity.
-2. **Mark the offer accepted** (conditional on its current status), then
+   two acceptances of the same remaining demand can match; the loser gets a
+   `409 ConflictError` and nothing is reserved. There is no way to reach a
+   negative remaining quantity.
+2. **Reserve on the produce listing** with the same conditional pattern:
+   `{ $expr: committedQuantity + offered ≤ quantity }` →
+   `$inc committedQuantity`. Two acceptances of the *same listing* against
+   *different requirements* cannot both over-commit the supply — the loser
+   reverts its requirement reservation and fails safely.
+3. **Mark the offer accepted** (conditional on its current status), then
    auto-fulfil the requirement if fully committed. If an offer state changed in
-   the tiny window between the two steps, the reservation is reverted and the
+   the tiny window between the steps, both reservations are reverted and the
    acceptance fails safely.
 
 This needs no multi-document transactions, so it works on a single-node
