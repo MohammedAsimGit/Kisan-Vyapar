@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Sprout, Store } from "lucide-react";
+import { Sprout, Store } from "lucide-react";
 import { Button, EmptyState, linkButtonClass, PageHeader } from "@/components/ui";
-import { RequirementFacts } from "@/components/requirements/requirement-facts";
-import { MatchExplain } from "@/components/matching/match-score";
+import { BuyerMatchCard } from "@/components/matching/buyer-match-card";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
 import { getFarmerProfileRecordId } from "@/features/profiles/profile-service";
 import { getFarmerRequirementDigest } from "@/features/matching/matching-service";
@@ -75,99 +74,57 @@ export default async function FarmerRequirementsPage({
         />
       ) : result ? (
         <>
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filter matches">
-              {FILTER_OPTIONS.map((option) => (
-                <FilterChip
-                  key={option.value}
-                  active={query.filter === option.value}
-                  href={hrefFor({ query, filter: option.value, page: 1 })}
-                >
-                  {option.label}
-                </FilterChip>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Sort matches">
-              {SORT_OPTIONS.map((option) => (
-                <FilterChip
-                  key={option.value}
-                  active={query.sort === option.value}
-                  href={hrefFor({ query, sort: option.value, page: 1 })}
-                >
-                  {option.label}
-                </FilterChip>
-              ))}
-            </div>
+          <div
+            className="flex items-center gap-1.5 overflow-x-auto pb-1"
+            role="group"
+            aria-label="Filter and sort matches"
+          >
+            {FILTER_OPTIONS.map((option) => (
+              <FilterChip
+                key={option.value}
+                active={query.filter === option.value}
+                href={hrefFor({ query, filter: option.value, page: 1 })}
+              >
+                {option.label}
+              </FilterChip>
+            ))}
+            <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-border" />
+            {SORT_OPTIONS.map((option) => (
+              <FilterChip
+                key={option.value}
+                active={query.sort === option.value}
+                href={hrefFor({ query, sort: option.value, page: 1 })}
+              >
+                {option.label}
+              </FilterChip>
+            ))}
           </div>
 
           <p className="text-sm text-muted-foreground">
             {result.meta.total} {result.meta.total === 1 ? "match" : "matches"} across your published crops.
           </p>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {result.matches.map((row) => (
-              <div
+              <BuyerMatchCard
                 key={`${row.listing.id}-${row.requirement.id}`}
-                className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6"
-              >
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-                        <Sprout className="size-4 text-primary" />
-                        Your {row.listing.cropName}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {row.listing.quantity} {row.listing.unitLabel} · {row.listing.qualityLabel}
-                        {row.listing.locationText ? ` · ${row.listing.locationText}` : ""}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      {row.requirement.vendor?.businessName ? (
-                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                          <Store className="size-4 text-primary" />
-                          {row.requirement.vendor.businessName}
-                        </span>
-                      ) : (
-                        <span className="text-sm font-semibold text-foreground">A buyer</span>
-                      )}
-                      <span className="text-sm text-muted-foreground">
-                        needs {row.requirement.quantity} {row.requirement.unitLabel} of {row.requirement.cropName}
-                      </span>
-                    </div>
-
-                    <RequirementFacts
-                      className="mt-4"
-                      quantity={row.requirement.quantity}
-                      unitLabel={row.requirement.unitLabel}
-                      qualityLabel={row.requirement.qualityLabel}
-                      targetPriceMin={row.requirement.targetPriceMin}
-                      targetPriceMax={row.requirement.targetPriceMax}
-                      locationText={row.requirement.locationText}
-                      requiredBy={row.requirement.requiredBy}
-                      notes={row.requirement.notes}
-                    />
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <Link
-                        href={`/farmer/requirements/${row.requirement.id}`}
-                        className={linkButtonClass("primary", "md")}
-                      >
-                        View requirement
-                        <ArrowRight className="size-4" />
-                      </Link>
-                      <Link
-                        href={`/farmer/produce/${row.listing.id}/matches`}
-                        className={linkButtonClass("outline", "md")}
-                      >
-                        All matches for this crop
-                      </Link>
-                    </div>
-                  </div>
-                  <MatchExplain match={row.match} className="lg:shrink-0 lg:flex-col-reverse lg:gap-3" />
-                </div>
-              </div>
+                listing={row.listing}
+                requirement={row.requirement}
+                match={row.match}
+                ctas={[
+                  {
+                    href: `/farmer/requirements/${row.requirement.id}`,
+                    label: "View requirement",
+                    variant: "primary",
+                    arrow: true,
+                  },
+                  {
+                    href: `/farmer/produce/${row.listing.id}/matches`,
+                    label: "All matches for this crop",
+                    variant: "outline",
+                  },
+                ]}
+              />
             ))}
           </div>
 
@@ -196,7 +153,7 @@ function FilterChip({
       href={href}
       aria-current={active ? "true" : undefined}
       className={cn(
-        "inline-flex h-9 items-center whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
