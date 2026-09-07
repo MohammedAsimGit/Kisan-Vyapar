@@ -7,7 +7,13 @@ const emptyStringToUndefined = (value: unknown): unknown =>
 
 const optionalNonEmptyString = z
   .preprocess(emptyStringToUndefined, z.string().trim().min(1))
-  .optional();
+  .optional()
+  // Never let a missing optional var fail the whole environment: if a
+  // deployment omits an optional variable, resolve it to `undefined`
+  // instead of throwing. (Hardening against bundler-specific zod
+  // compilation, where an absent optional field can otherwise surface
+  // as a parse error and break every database route.)
+  .catch(undefined);
 
 const serverEnvSchema = z.object({
   MONGODB_URI: optionalNonEmptyString,
