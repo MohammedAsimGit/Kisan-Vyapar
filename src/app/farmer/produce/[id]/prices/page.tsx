@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -15,6 +16,7 @@ import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
 import { getFarmerProfileRecordId } from "@/features/profiles/profile-service";
 import { getFarmerProduceListing } from "@/features/produce/produce-service";
+import type { ProduceListingView } from "@/features/produce/types";
 import { getMarketPrices } from "@/features/market/market-service";
 import { hasCropMapping } from "@/features/market/crop-commodities";
 import { buildPriceGuidanceDto } from "@/features/pricing/pricing-service";
@@ -49,14 +51,6 @@ export default async function MarketPricesPage({ params }: RouteContext) {
   }
 
   const mapped = hasCropMapping(listing.crop);
-  const market = await getMarketPrices({
-    crop: listing.crop,
-    state: listing.location.state,
-    district: listing.location.district,
-  });
-
-  const guidance = buildPriceGuidanceDto(market.records);
-  const rows = latestPerMarket(market.records);
   const locationLine = [listing.location.village, listing.location.district]
     .filter(Boolean)
     .join(", ");
@@ -95,116 +89,169 @@ export default async function MarketPricesPage({ params }: RouteContext) {
           title="No market mapping for this crop yet"
           description="We can't reliably match this crop to official market data, so no prices are shown."
         />
-      ) : guidance.observationCount === 0 ? (
-        <EmptyState
-          icon={<Database className="size-6" />}
-          title={`No market price data available for ${listing.cropName} here`}
-          description={
-            market.availability === "unconfigured"
-              ? "Market price data has not been configured for this deployment yet. Prices are never invented."
-              : "Market prices currently unavailable. Please try again later."
-          }
-        />
       ) : (
-        <div className="space-y-8">
-          <MarketSnapshot
-            guidance={guidance}
-            rowCount={rows.length}
-            unitLabel={unitLabel(guidance.unit)}
-          />
+        <Suspense fallback={<MarketPricesSkeleton />}>
+          <MarketPricesSection listing={listing} />
+        </Suspense>
+      )}
+    </div>
+  );
+}
 
-          {guidance.hasSuggestion ? (
-            <section className="rounded-3xl border border-primary/30 bg-primary-soft/40 p-6 shadow-card sm:p-7">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                Price guidance
-              </p>
-              <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-                <div>
-                  <p className="text-sm text-muted-foreground">Suggested asking price</p>
-                  <p className="mt-1 text-4xl font-semibold tracking-tight text-foreground">
-                    {guidance.suggestedPrice !== undefined
-                      ? formatInr(guidance.suggestedPrice)
-                      : "—"}
-                    <span className="ml-1 text-lg font-medium text-muted-foreground">
-                      / {unitLabel(guidance.unit)}
-                    </span>
-                  </p>
-                  {guidance.suggestedRange?.min !== undefined &&
-                  guidance.suggestedRange.max !== undefined ? (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Suggested range: {formatInr(guidance.suggestedRange.min)} –{" "}
-                      {formatInr(guidance.suggestedRange.max)}
-                    </p>
-                  ) : null}
-                  <div className="mt-3">
-                    <ConfidenceBadge level={guidance.confidence} />
-                  </div>
-                </div>
+/**
+ * Everything that depends on the (possibly slow) market-data refresh. The page
+ * shell above — back link, header, draft notice — renders and streams
+ * immediately; this section suspends behind a skeleton until the external
+ * provider responds or its cached observations are read.
+ */
+async function MarketPricesSection({ listing }: { listing: ProduceListingView }) {
+  const market = await getMarketPrices({
+    crop: listing.crop,
+    state: listing.location.state,
+    district: listing.location.district,
+  });
 
-                <div className="rounded-2xl border border-border bg-surface p-4">
-                  <p className="text-sm font-semibold">Why this price?</p>
-                  <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
-                    {guidance.factors.slice(0, 4).map((factor) => (
-                      <li key={factor} className="flex items-start gap-2">
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                        {factor}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+  const guidance = buildPriceGuidanceDto(market.records);
+  const rows = latestPerMarket(market.records);
 
-              <div className="mt-6 border-t border-primary/15 pt-5">
-                <GuidanceActions
-                  listingId={listing.id}
-                  suggestedPrice={guidance.suggestedPrice}
-                  unit={unitLabel(guidance.unit)}
-                  suggestedMin={guidance.suggestedRange?.min}
-                  suggestedMax={guidance.suggestedRange?.max}
-                />
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                This is decision support based on observed government market data —
-                not a guarantee. The final asking price is yours.
-              </p>
-            </section>
-          ) : (
-            <div className="rounded-2xl border border-border bg-surface p-5 text-sm leading-6 text-muted-foreground">
-              Not enough market observations to generate a reliable suggestion yet.
-            </div>
-          )}
+  if (guidance.observationCount === 0) {
+    return (
+      <EmptyState
+        icon={<Database className="size-6" />}
+        title={`No market price data available for ${listing.cropName} here`}
+        description={
+          market.availability === "unconfigured"
+            ? "Market price data has not been configured for this deployment yet. Prices are never invented."
+            : "Market prices currently unavailable. Please try again later."
+        }
+      />
+    );
+  }
 
-          <TrendSection series={guidance.series} unit={guidance.unit} />
+  return (
+    <div className="space-y-8">
+      <MarketSnapshot
+        guidance={guidance}
+        rowCount={rows.length}
+        unitLabel={unitLabel(guidance.unit)}
+      />
 
-          <section className="space-y-4">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight">Market prices</h2>
-                <p className="text-sm text-muted-foreground">
-                  {rows.length} {rows.length === 1 ? "market" : "markets"} ·{" "}
-                  {market.meta.scopeLabel ?? "India"} ·{" "}
-                  {market.availability === "stale"
-                    ? "market data may be outdated"
-                    : "latest reported mandi price"}
-                  {market.meta.lastUpdated
-                    ? ` · updated ${formatUpdated(market.meta.lastUpdated)}`
-                    : ""}
-                </p>
-              </div>
-              <Badge tone={market.availability === "stale" ? "warning" : "success"}>
-                {market.availability === "fresh" ? "Fresh" : "Updated earlier"}
-              </Badge>
-            </div>
-
-            <MarketRows rows={rows} unit={unitLabel(guidance.unit)} />
-          </section>
-
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <TrendingUp className="size-4 text-primary" />
-            Source: {market.meta.source ?? "Government market data"}
+      {guidance.hasSuggestion ? (
+        <section className="rounded-3xl border border-primary/30 bg-primary-soft/40 p-6 shadow-card sm:p-7">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            Price guidance
           </p>
+          <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+            <div>
+              <p className="text-sm text-muted-foreground">Suggested asking price</p>
+              <p className="mt-1 text-4xl font-semibold tracking-tight text-foreground">
+                {guidance.suggestedPrice !== undefined
+                  ? formatInr(guidance.suggestedPrice)
+                  : "—"}
+                <span className="ml-1 text-lg font-medium text-muted-foreground">
+                  / {unitLabel(guidance.unit)}
+                </span>
+              </p>
+              {guidance.suggestedRange?.min !== undefined &&
+              guidance.suggestedRange.max !== undefined ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Suggested range: {formatInr(guidance.suggestedRange.min)} –{" "}
+                  {formatInr(guidance.suggestedRange.max)}
+                </p>
+              ) : null}
+              <div className="mt-3">
+                <ConfidenceBadge level={guidance.confidence} />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-surface p-4">
+              <p className="text-sm font-semibold">Why this price?</p>
+              <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                {guidance.factors.slice(0, 4).map((factor) => (
+                  <li key={factor} className="flex items-start gap-2">
+                    <Check className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                    {factor}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-primary/15 pt-5">
+            <GuidanceActions
+              listingId={listing.id}
+              suggestedPrice={guidance.suggestedPrice}
+              unit={unitLabel(guidance.unit)}
+              suggestedMin={guidance.suggestedRange?.min}
+              suggestedMax={guidance.suggestedRange?.max}
+            />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            This is decision support based on observed government market data —
+            not a guarantee. The final asking price is yours.
+          </p>
+        </section>
+      ) : (
+        <div className="rounded-2xl border border-border bg-surface p-5 text-sm leading-6 text-muted-foreground">
+          Not enough market observations to generate a reliable suggestion yet.
         </div>
       )}
+
+      <TrendSection series={guidance.series} unit={guidance.unit} />
+
+      <section className="space-y-4">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Market prices</h2>
+            <p className="text-sm text-muted-foreground">
+              {rows.length} {rows.length === 1 ? "market" : "markets"} ·{" "}
+              {market.meta.scopeLabel ?? "India"} ·{" "}
+              {market.availability === "stale"
+                ? "market data may be outdated"
+                : "latest reported mandi price"}
+              {market.meta.lastUpdated
+                ? ` · updated ${formatUpdated(market.meta.lastUpdated)}`
+                : ""}
+            </p>
+          </div>
+          <Badge tone={market.availability === "stale" ? "warning" : "success"}>
+            {market.availability === "fresh" ? "Fresh" : "Updated earlier"}
+          </Badge>
+        </div>
+
+        <MarketRows rows={rows} unit={unitLabel(guidance.unit)} />
+      </section>
+
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <TrendingUp className="size-4 text-primary" />
+        Source: {market.meta.source ?? "Government market data"}
+      </p>
+    </div>
+  );
+}
+
+function MarketPricesSkeleton() {
+  return (
+    <div className="space-y-8" aria-hidden="true">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((cell) => (
+          <div key={cell} className="rounded-2xl border border-border bg-surface p-4 shadow-card">
+            <div className="h-3 w-20 animate-pulse rounded-full bg-muted" />
+            <div className="mt-3 h-6 w-28 animate-pulse rounded-full bg-muted" />
+          </div>
+        ))}
+      </section>
+      <section className="rounded-3xl border border-primary/30 bg-primary-soft/40 p-6 shadow-card sm:p-7">
+        <div className="h-3 w-32 animate-pulse rounded-full bg-muted" />
+        <div className="mt-5 h-10 w-56 animate-pulse rounded-full bg-muted" />
+        <div className="mt-8 h-4 w-3/4 animate-pulse rounded-full bg-muted" />
+        <div className="mt-2 h-4 w-2/3 animate-pulse rounded-full bg-muted" />
+      </section>
+      <section className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+        <div className="h-4 w-40 animate-pulse rounded-full bg-muted" />
+        <div className="mt-4 h-28 w-full animate-pulse rounded-xl bg-muted/60" />
+      </section>
+      <p className="text-xs text-muted-foreground">Loading market data…</p>
     </div>
   );
 }

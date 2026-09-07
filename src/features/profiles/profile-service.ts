@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { connectToDatabase } from "@/lib/db";
 import { FarmerProfileModel, VendorProfileModel } from "@/models";
 import { USER_ROLES, type UserRole } from "@/constants/roles";
@@ -54,9 +55,33 @@ export function toVendorProfileView(doc: VendorDocShape | null): VendorProfileVi
   };
 }
 
+type LeanFarmerProfile = FarmerDocShape & { _id?: unknown; user?: unknown };
+type LeanVendorProfile = VendorDocShape & { _id?: unknown; user?: unknown };
+
+/**
+ * One cached DB lookup per request: layouts and pages both need the profile
+ * (for the completeness gate) and its record id (for owned-record queries).
+ * React `cache()` dedupes across component boundaries in a single render, so a
+ * dashboard render issues exactly ONE profile query instead of two or three.
+ */
+const findFarmerProfileDoc = cache(
+  async (userId: string): Promise<LeanFarmerProfile | null> => {
+    await connectToDatabase();
+    const doc = await FarmerProfileModel.findOne({ user: userId }).lean();
+    return (doc ?? null) as LeanFarmerProfile | null;
+  },
+);
+
+const findVendorProfileDoc = cache(
+  async (userId: string): Promise<LeanVendorProfile | null> => {
+    await connectToDatabase();
+    const doc = await VendorProfileModel.findOne({ user: userId }).lean();
+    return (doc ?? null) as LeanVendorProfile | null;
+  },
+);
+
 export async function getFarmerProfile(userId: string): Promise<FarmerProfileView | null> {
-  await connectToDatabase();
-  const doc = await FarmerProfileModel.findOne({ user: userId }).lean();
+  const doc = await findFarmerProfileDoc(userId);
   return toFarmerProfileView(doc);
 }
 
@@ -88,12 +113,6 @@ export async function saveFarmerProfile(
     throw new Error("Failed to save farmer profile.");
   }
   return updated;
-}
-
-export async function getVendorProfile(userId: string): Promise<VendorProfileView | null> {
-  await connectToDatabase();
-  const doc = await VendorProfileModel.findOne({ user: userId }).lean();
-  return toVendorProfileView(doc);
 }
 
 export async function saveVendorProfile(
@@ -143,19 +162,18 @@ export async function getProfileForRole(
 export async function getFarmerProfileRecordId(
   userId: string,
 ): Promise<string | null> {
-  await connectToDatabase();
-  const doc = await FarmerProfileModel.findOne({ user: userId })
-    .select({ _id: 1 })
-    .lean();
+  const doc = await findFarmerProfileDoc(userId);
   return doc ? String(doc._id) : null;
+}
+
+export async function getVendorProfile(userId: string): Promise<VendorProfileView | null> {
+  const doc = await findVendorProfileDoc(userId);
+  return toVendorProfileView(doc);
 }
 
 export async function getVendorProfileRecordId(
   userId: string,
 ): Promise<string | null> {
-  await connectToDatabase();
-  const doc = await VendorProfileModel.findOne({ user: userId })
-    .select({ _id: 1 })
-    .lean();
+  const doc = await findVendorProfileDoc(userId);
   return doc ? String(doc._id) : null;
 }

@@ -117,6 +117,10 @@ const buyerRequirementSchema = new Schema(
 
 buyerRequirementSchema.index({ vendor: 1, status: 1, createdAt: -1 });
 buyerRequirementSchema.index({ crop: 1, status: 1 });
+// Matching queries always filter active requirements by crop and required-by
+// date (farmer digest, per-listing matches), so serve the full filter from one
+// index instead of scanning the crop's active rows and filtering in memory.
+buyerRequirementSchema.index({ crop: 1, status: 1, requiredBy: -1, createdAt: -1 });
 buyerRequirementSchema.index({ status: 1, requiredBy: 1 });
 buyerRequirementSchema.index({ "location.geo": "2dsphere" });
 
