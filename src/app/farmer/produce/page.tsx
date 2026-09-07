@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarDays, MapPin, Plus, Sprout } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CalendarDays,
+  MapPin,
+  Plus,
+  Sprout,
+} from "lucide-react";
 import { EmptyState, linkButtonClass, PageHeader } from "@/components/ui";
 import { ProduceStatusBadge } from "@/components/produce/produce-status-badge";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
@@ -70,11 +77,10 @@ export default async function FarmerProducePage() {
 }
 
 function ProduceCard({ listing }: { listing: ProduceListingView }) {
+  const isDraft = listing.status === "draft";
+
   return (
-    <Link
-      href={`/farmer/produce/${listing.id}`}
-      className="group flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:shadow-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-    >
+    <div className="flex flex-col rounded-2xl border border-border bg-surface p-6 shadow-card transition-all duration-150">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-primary-soft text-2xl">
@@ -112,16 +118,50 @@ function ProduceCard({ listing }: { listing: ProduceListingView }) {
             Ready: {formatReadableDate(listing.expectedHarvestDate)}
           </div>
         ) : null}
+        {listing.askingPrice !== undefined ? (
+          <div className="flex items-center gap-1.5 font-medium text-foreground">
+            Asking: ₹{formatPlain(listing.askingPrice)} / {listing.unitLabel}
+          </div>
+        ) : null}
       </dl>
 
-      <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary">
-        View crop
-        <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
-          →
-        </span>
-      </span>
-    </Link>
+      <div className="mt-5 flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+        {isDraft ? (
+          <>
+            <p className="flex items-center gap-1.5 text-sm font-medium text-warning-fg">
+              <AlertTriangle className="size-4" />
+              {listing.askingPrice !== undefined
+                ? "Draft — not published yet"
+                : "Asking price not set"}
+            </p>
+            <Link
+              href={`/farmer/produce/${listing.id}/edit`}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-base font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              {listing.askingPrice !== undefined
+                ? "Continue Editing"
+                : "Continue & Publish"}
+              <ArrowRight className="size-4" />
+            </Link>
+          </>
+        ) : (
+          <Link
+            href={`/farmer/produce/${listing.id}`}
+            className="group inline-flex items-center gap-1 text-sm font-medium text-primary"
+          >
+            View crop
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        )}
+      </div>
+    </div>
   );
+}
+
+function formatPlain(value: number): string {
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 function formatReadableDate(dateOnly: string): string {

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { ProduceForm } from "@/components/produce/produce-form";
+import { ProduceWorkspace } from "@/components/produce/produce-workspace";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
 import { getFarmerProfile } from "@/features/profiles/profile-service";
 
 export const metadata: Metadata = {
-  title: "Add a crop",
+  title: "List a crop",
 };
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export default async function NewProducePage() {
 
   return (
     <div className="py-2 sm:py-4">
-      <ProduceForm
+      <ProduceWorkspace
         mode="create"
         profileLocation={
           profile

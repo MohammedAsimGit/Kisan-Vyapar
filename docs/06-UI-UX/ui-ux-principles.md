@@ -89,11 +89,14 @@ are shown as disabled controls + `Soon`/`Planned` badges — never fake working 
   (database reachability + what is actually live).
 - `/farmer/produce` — "My Produce" management list with real data + premium empty
   state.
-- `/farmer/produce/new` — guided multi-step crop entry: **Crop → Details →
-  Review** with progress indicator, visual crop cards, forgiving search, "view
-  all" categories, large numeric quantity + quick chips, unit cards, quality
-  cards, optional variety, location prefilled from profile, harvest date, and an
-  honest review ("we'll help you understand the market price" — no fake prices).
+- `/farmer/produce/new` and `/farmer/produce/[id]/edit` — unified crop editor
+  on one screen: crop details on the left, live recommended market price panel on
+  the right (waiting / loading / result / error states), "Use Recommended Price",
+  manual asking-price entry, compact crop summary, and **Save as Draft** /
+  **Publish Crop** actions — no multi-page wizard for the normal publish flow.
+  Draft cards on `/farmer/produce` open the same editor via "Continue & Publish".
+- `/farmer/produce/[id]` — listing detail, deactivate/reactivate, delete, publish
+  state, plus links to market intelligence and buyer matches.
 - `/farmer/produce/[id]` (+ `/edit`) — listing detail, edit (prefilled multi-step),
   deactivate/reactivate, and delete with inline confirmation.
 

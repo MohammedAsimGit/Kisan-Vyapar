@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ProduceForm } from "@/components/produce/produce-form";
+import { ProduceWorkspace } from "@/components/produce/produce-workspace";
 import { requirePageUser } from "@/features/auth/lib/page-guards";
 import { getFarmerProfileRecordId } from "@/features/profiles/profile-service";
 import { getFarmerProduceListing } from "@/features/produce/produce-service";
 import { objectIdSchema } from "@/lib/validation";
 
 export const metadata: Metadata = {
-  title: "Edit crop",
+  title: "List a crop",
 };
 
 export const dynamic = "force-dynamic";
@@ -31,9 +31,10 @@ export default async function EditProducePage({ params }: RouteContext) {
 
   return (
     <div className="py-2 sm:py-4">
-      <ProduceForm
+      <ProduceWorkspace
         mode="edit"
         listingId={listing.id}
+        initialStatus={listing.status}
         initial={{
           crop: listing.crop,
           variety: listing.variety,
@@ -47,6 +48,7 @@ export default async function EditProducePage({ params }: RouteContext) {
             pincode: listing.location.pincode,
           },
           expectedHarvestDate: listing.expectedHarvestDate,
+          askingPrice: listing.askingPrice,
         }}
       />
     </div>

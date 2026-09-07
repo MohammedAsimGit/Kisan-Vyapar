@@ -174,7 +174,7 @@ Routes (all protected routes require a MongoDB-backed session):
 | `/onboarding` | complete the role profile |
 | `/farmer` `/vendor` `/admin` | protected role dashboards |
 | `/farmer/produce` | manage your crops (list) |
-| `/farmer/produce/new` | add a crop (visual multi-step) |
+| `/farmer/produce/new` | unified crop editor: details + market price + publish on one screen |
 | `/farmer/produce/[id]` | view / edit / publish / deactivate / delete a crop |
 | `/farmer/produce/[id]/prices` | market intelligence + set your asking price |
 | `/farmer/produce/[id]/matches` | buyer requirements matching this published crop |
