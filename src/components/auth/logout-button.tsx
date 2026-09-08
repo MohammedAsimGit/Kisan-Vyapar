@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { LogOut } from "lucide-react";
 import { postJson } from "@/lib/client/fetch-json";
 import { cn } from "@/lib/utils/cn";
@@ -15,12 +16,15 @@ export function LogoutButton({
   label?: string;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
 
   async function handleLogout() {
     setSubmitting(true);
     try {
       await postJson("/api/auth/logout", {});
+      // Security: never let the next session see this user's cached data.
+      queryClient.clear();
     } finally {
       router.replace("/");
       router.refresh();

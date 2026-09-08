@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Ban, CheckCircle2, Power, Rocket, Trash2 } from "lucide-react";
 import { patchJson, deleteJson, ApiRequestError } from "@/lib/client/fetch-json";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import { invalidateFarmerProduce } from "@/lib/client/query-keys";
 import { Alert, Button } from "@/components/ui";
 import type { ProduceListingStatus } from "@/constants/produce-listing-statuses";
 
@@ -15,6 +18,8 @@ export function ProduceActions({
   status: ProduceListingStatus;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const session = useSessionUser();
   const [busy, setBusy] = useState<null | "status" | "delete">(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +33,9 @@ export function ProduceActions({
     try {
       await patchJson(`/api/farmer/produce/${listingId}`, { status: "active" });
       router.refresh();
+      if (session.data?.id) {
+        await invalidateFarmerProduce(queryClient, session.data.id);
+      }
     } catch (err) {
       setError(
         err instanceof ApiRequestError ? err.message : "Couldn't publish this crop.",
@@ -44,6 +52,9 @@ export function ProduceActions({
         status: isActive ? "withdrawn" : "active",
       });
       router.refresh();
+      if (session.data?.id) {
+        await invalidateFarmerProduce(queryClient, session.data.id);
+      }
     } catch (err) {
       setError(
         err instanceof ApiRequestError ? err.message : "Couldn't update this crop.",
@@ -57,6 +68,9 @@ export function ProduceActions({
     setError(null);
     try {
       await deleteJson(`/api/farmer/produce/${listingId}`);
+      if (session.data?.id) {
+        await invalidateFarmerProduce(queryClient, session.data.id);
+      }
       router.push("/farmer/produce");
       router.refresh();
     } catch (err) {

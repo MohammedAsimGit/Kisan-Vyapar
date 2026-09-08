@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import {
   Check,
   ClipboardList,
@@ -13,44 +15,58 @@ import {
 import { Badge, EmptyState, linkButtonClass, PageHeader } from "@/components/ui";
 import { RequirementCard } from "@/components/requirements/requirement-card";
 import { greetingForHour } from "@/lib/utils/greeting";
-import { requirePageUser } from "@/features/auth/lib/page-guards";
-import { getVendorProfile, getVendorProfileRecordId } from "@/features/profiles/profile-service";
-import { listVendorRequirements } from "@/features/buyer-requirements/buyer-requirement-service";
-import { countPendingOffersByRequirement } from "@/features/offers/offer-service";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import { fetchVendorDashboard, fetchVendorProfile } from "@/lib/client/api-queries";
+import { kvKeys } from "@/lib/client/query-keys";
+import { LIST_STALE_TIME, STABLE_STALE_TIME } from "@/lib/client/query-client";
+import { ScreenError, ScreenSkeleton } from "@/components/dashboard/screen-skeleton";
 import { cn } from "@/lib/utils/cn";
 
-export const metadata: Metadata = {
-  title: "Vendor dashboard",
-};
+export default function VendorDashboardPage() {
+  const session = useSessionUser();
+  const userId = session.data?.id;
 
-export const dynamic = "force-dynamic";
+  const dashboardQuery = useQuery({
+    queryKey: kvKeys.vendor(userId ?? "").dashboard,
+    queryFn: fetchVendorDashboard,
+    staleTime: LIST_STALE_TIME,
+    enabled: Boolean(userId),
+  });
 
-export default async function VendorDashboardPage() {
-  const user = await requirePageUser();
-  const profile = await getVendorProfile(user.id);
-  const vendorProfileId = await getVendorProfileRecordId(user.id);
-  const [result, pendingCounts] = await Promise.all([
-    vendorProfileId
-      ? listVendorRequirements(vendorProfileId)
-      : Promise.resolve({ requirements: [], counts: null }),
-    vendorProfileId
-      ? countPendingOffersByRequirement(vendorProfileId)
-      : Promise.resolve<Record<string, number>>({}),
-  ]);
-  const counts = result.counts ?? {
-    active: 0,
-    paused: 0,
-    fulfilled: 0,
-    expired: 0,
-    cancelled: 0,
-  };
+  const profileQuery = useQuery({
+    queryKey: kvKeys.vendor(userId ?? "").profile,
+    queryFn: fetchVendorProfile,
+    staleTime: STABLE_STALE_TIME,
+    enabled: Boolean(userId),
+  });
+
+  if (!userId) {
+    return <ScreenSkeleton />;
+  }
+  if (dashboardQuery.isPending || profileQuery.isPending) {
+    return <ScreenSkeleton />;
+  }
+  if (dashboardQuery.isError || profileQuery.isError) {
+    return (
+      <ScreenError
+        onRetry={() => {
+          void dashboardQuery.refetch();
+          void profileQuery.refetch();
+        }}
+        description="We couldn't load your dashboard right now. Please try again in a moment."
+      />
+    );
+  }
+
+  const { requirements, counts, pendingCounts } = dashboardQuery.data;
+  const profile = profileQuery.data;
   const pendingOffers = Object.values(pendingCounts).reduce(
     (sum, count) => sum + count,
     0,
   );
-  const recent = result.requirements.slice(0, 3);
+  const recent = requirements.slice(0, 3);
 
-  const firstName = user.fullName.split(/\s+/)[0] ?? user.fullName;
+  const firstName = session.data?.fullName.split(/\s+/)[0] ?? "buyer";
   const business = profile?.businessName;
   const locationText = [profile?.city, profile?.state].filter(Boolean).join(", ");
   const greeting = greetingForHour(new Date().getHours());

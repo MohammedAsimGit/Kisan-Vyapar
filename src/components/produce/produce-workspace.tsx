@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   CalendarDays,
@@ -26,6 +27,8 @@ import {
 } from "@/constants/quality-grades";
 import type { ProduceListingStatus } from "@/constants/produce-listing-statuses";
 import { getJson, patchJson, postJson, ApiRequestError } from "@/lib/client/fetch-json";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import { invalidateFarmerProduce } from "@/lib/client/query-keys";
 import { Alert, Button, Field, Input, linkButtonClass } from "@/components/ui";
 import { CropBadge, CropPicker } from "./crop-picker";
 import {
@@ -104,6 +107,8 @@ export function ProduceWorkspace({
   const isActive = initialStatus === "active";
   const showPublish = !isEdit || !isActive;
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const session = useSessionUser();
 
   // Crop + details
   const [cropId, setCropId] = useState<string | null>(initial?.crop ?? null);
@@ -390,6 +395,9 @@ export function ProduceWorkspace({
       }
       if (action === "publish") {
         await patchJson(`/api/farmer/produce/${id}`, { status: "active" });
+      }
+      if (session.data?.id) {
+        await invalidateFarmerProduce(queryClient, session.data.id);
       }
       router.push(`/farmer/produce/${id}`);
       router.refresh();

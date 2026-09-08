@@ -1,32 +1,44 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+"use client";
+
+import { useParams, notFound } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { NegotiationDetail } from "@/components/offers/negotiation-detail";
-import { requirePageUser } from "@/features/auth/lib/page-guards";
-import { getVendorProfileRecordId } from "@/features/profiles/profile-service";
-import { getOfferForVendor } from "@/features/offers/offer-service";
-import { objectIdSchema } from "@/lib/validation";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import { fetchVendorOffer } from "@/lib/client/api-queries";
+import { kvKeys } from "@/lib/client/query-keys";
+import { DYNAMIC_STALE_TIME } from "@/lib/client/query-client";
+import { ScreenError, ScreenSkeleton } from "@/components/dashboard/screen-skeleton";
+import { ApiRequestError } from "@/lib/client/fetch-json";
 
-export const metadata: Metadata = {
-  title: "Negotiation",
-};
+export default function VendorOfferDetailPage() {
+  const params = useParams<{ id: string }>();
+  const offerId = params?.id ?? "";
 
-export const dynamic = "force-dynamic";
+  const session = useSessionUser();
+  const userId = session.data?.id;
 
-type RouteContext = { params: Promise<{ id: string }> };
+  const offerQuery = useQuery({
+    queryKey: kvKeys.vendor(userId ?? "").offer(offerId),
+    queryFn: () => fetchVendorOffer(offerId),
+    staleTime: DYNAMIC_STALE_TIME,
+    enabled: Boolean(userId && offerId),
+  });
 
-export default async function VendorOfferDetailPage({ params }: RouteContext) {
-  const user = await requirePageUser();
-  const { id } = await params;
-
-  if (!objectIdSchema.safeParse(id).success) {
-    notFound();
+  if (!userId || offerQuery.isPending) {
+    return <ScreenSkeleton maxWidth="max-w-5xl" />;
+  }
+  if (offerQuery.isError) {
+    const status = (offerQuery.error as ApiRequestError | undefined)?.status;
+    if (status === 404 || status === 400) {
+      notFound();
+    }
+    return (
+      <ScreenError
+        onRetry={() => void offerQuery.refetch()}
+        description="We couldn't load this negotiation right now. Please try again in a moment."
+      />
+    );
   }
 
-  const profileId = await getVendorProfileRecordId(user.id);
-  const offer = profileId ? await getOfferForVendor(profileId, id) : null;
-  if (!offer) {
-    notFound();
-  }
-
-  return <NegotiationDetail offer={offer} role="vendor" />;
+  return <NegotiationDetail offer={offerQuery.data} role="vendor" />;
 }

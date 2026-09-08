@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { postJson, patchJson, ApiRequestError } from "@/lib/client/fetch-json";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import { invalidateVendorRequirements } from "@/lib/client/query-keys";
 import {
   Alert,
   Button,
@@ -84,6 +87,8 @@ export function RequirementForm({
   initial?: RequirementFormInitial;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const session = useSessionUser();
   const [crop, setCrop] = useState(initial?.crop ?? "");
   const [variety, setVariety] = useState(initial?.variety ?? "");
   const [quality, setQuality] = useState(initial?.quality ?? "");
@@ -161,6 +166,9 @@ export function RequirementForm({
           payload,
         );
         id = data.requirement.id;
+      }
+      if (session.data?.id) {
+        await invalidateVendorRequirements(queryClient, session.data.id);
       }
       router.replace(id ? `/vendor/requirements/${id}` : "/vendor/requirements");
       router.refresh();

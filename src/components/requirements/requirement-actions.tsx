@@ -2,9 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Ban, CheckCircle2, Play, Trash2 } from "lucide-react";
 import { patchJson, ApiRequestError } from "@/lib/client/fetch-json";
 import { Alert, Button } from "@/components/ui";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import {
+  invalidateVendorRequirements,
+  invalidateRequirementOffers,
+} from "@/lib/client/query-keys";
 import type { BuyerRequirementStatus } from "@/constants/buyer-requirement-statuses";
 
 export function RequirementActions({
@@ -15,6 +21,8 @@ export function RequirementActions({
   status: BuyerRequirementStatus;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const session = useSessionUser();
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"cancel" | "fulfill" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +42,10 @@ export function RequirementActions({
       });
       setConfirm(null);
       router.refresh();
+      if (session.data?.id) {
+        await invalidateVendorRequirements(queryClient, session.data.id);
+        await invalidateRequirementOffers(queryClient, session.data.id, requirementId);
+      }
     } catch (err) {
       setError(
         err instanceof ApiRequestError

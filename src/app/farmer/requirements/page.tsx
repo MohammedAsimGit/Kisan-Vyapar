@@ -1,22 +1,22 @@
-import type { Metadata } from "next";
+"use client";
+
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Sprout, Store } from "lucide-react";
 import { Button, EmptyState, linkButtonClass, PageHeader } from "@/components/ui";
 import { BuyerMatchCard } from "@/components/matching/buyer-match-card";
-import { requirePageUser } from "@/features/auth/lib/page-guards";
-import { getFarmerProfileRecordId } from "@/features/profiles/profile-service";
-import { getFarmerRequirementDigest } from "@/features/matching/matching-service";
-import { matchQueryFromPageParams } from "@/features/matching/query-schema";
-import type { MatchQuery } from "@/features/matching/query-schema";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import {
+  fetchFarmerRequirementDigest,
+  fetchProduceListings,
+} from "@/lib/client/api-queries";
+import { kvKeys } from "@/lib/client/query-keys";
+import { DYNAMIC_STALE_TIME, LIST_STALE_TIME } from "@/lib/client/query-client";
+import { ScreenError, ScreenSkeleton } from "@/components/dashboard/screen-skeleton";
 import type { MatchFilter } from "@/features/matching/types";
 import { cn } from "@/lib/utils/cn";
-import { getFarmerProduceListings } from "@/features/produce/produce-service";
-
-export const metadata: Metadata = {
-  title: "Buyer requirements",
-};
-
-export const dynamic = "force-dynamic";
 
 const FILTER_OPTIONS: Array<{ value: MatchFilter; label: string }> = [
   { value: "all", label: "All" },
@@ -26,26 +26,65 @@ const FILTER_OPTIONS: Array<{ value: MatchFilter; label: string }> = [
   { value: "nearby", label: "Nearby" },
 ];
 
-const SORT_OPTIONS: Array<{ value: MatchQuery["sort"]; label: string }> = [
+const SORT_OPTIONS: Array<{ value: "score" | "deadline" | "nearest"; label: string }> = [
   { value: "score", label: "Best match" },
   { value: "deadline", label: "Needed soon" },
   { value: "nearest", label: "Nearest" },
 ];
 
-export default async function FarmerRequirementsPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const user = await requirePageUser();
-  const profileId = await getFarmerProfileRecordId(user.id);
-  const listings = profileId ? await getFarmerProduceListings(profileId) : [];
-  const published = listings.filter((listing) => listing.status === "active").length;
+export default function FarmerRequirementsPage() {
+  return (
+    <Suspense fallback={<ScreenSkeleton />}>
+      <FarmerRequirementsContent />
+    </Suspense>
+  );
+}
 
-  const query = await matchQueryFromPageParams(searchParams);
-  const result = profileId
-    ? await getFarmerRequirementDigest(profileId, query)
-    : null;
+function FarmerRequirementsContent() {
+  const searchParams = useSearchParams();
+  const filter = readFilter(searchParams.get("filter"));
+  const sort = readSort(searchParams.get("sort"));
+  const page = readPage(searchParams.get("page"));
+
+  const session = useSessionUser();
+  const userId = session.data?.id;
+
+  const listingsQuery = useQuery({
+    queryKey: kvKeys.farmer(userId ?? "").produce,
+    queryFn: fetchProduceListings,
+    staleTime: LIST_STALE_TIME,
+    enabled: Boolean(userId),
+  });
+
+  const digestQuery = useQuery({
+    queryKey: kvKeys.farmer(userId ?? "").requirements({ page, filter, sort }),
+    queryFn: () => fetchFarmerRequirementDigest({ page, filter, sort }),
+    staleTime: DYNAMIC_STALE_TIME,
+    enabled: Boolean(userId),
+  });
+
+  if (!userId) {
+    return <ScreenSkeleton />;
+  }
+  if (listingsQuery.isPending || digestQuery.isPending) {
+    return <ScreenSkeleton />;
+  }
+  if (listingsQuery.isError || digestQuery.isError) {
+    return (
+      <ScreenError
+        onRetry={() => {
+          void listingsQuery.refetch();
+          void digestQuery.refetch();
+        }}
+        description="We couldn't load buyer requirements right now. Please try again in a moment."
+      />
+    );
+  }
+
+  const published = listingsQuery.data.filter(
+    (listing) => listing.status === "active",
+  ).length;
+  const result = digestQuery.data;
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -66,13 +105,13 @@ export default async function FarmerRequirementsPage({
             </Link>
           }
         />
-      ) : result && result.matches.length === 0 ? (
+      ) : result.matches.length === 0 ? (
         <EmptyState
           icon={<Store className="size-6" />}
           title="No matching buyer requirements yet"
           description="Buyers will appear here when they post requirements that fit your published produce."
         />
-      ) : result ? (
+      ) : (
         <>
           <div
             className="flex items-center gap-1.5 overflow-x-auto pb-1"
@@ -82,8 +121,8 @@ export default async function FarmerRequirementsPage({
             {FILTER_OPTIONS.map((option) => (
               <FilterChip
                 key={option.value}
-                active={query.filter === option.value}
-                href={hrefFor({ query, filter: option.value, page: 1 })}
+                active={filter === option.value}
+                href={hrefFor({ filter: option.value, sort, page: 1 })}
               >
                 {option.label}
               </FilterChip>
@@ -92,8 +131,8 @@ export default async function FarmerRequirementsPage({
             {SORT_OPTIONS.map((option) => (
               <FilterChip
                 key={option.value}
-                active={query.sort === option.value}
-                href={hrefFor({ query, sort: option.value, page: 1 })}
+                active={sort === option.value}
+                href={hrefFor({ filter, sort: option.value, page: 1 })}
               >
                 {option.label}
               </FilterChip>
@@ -131,12 +170,36 @@ export default async function FarmerRequirementsPage({
           <PaginationBar
             page={result.meta.page}
             totalPages={result.meta.totalPages}
-            hrefFor={(page) => hrefFor({ query, page })}
+            hrefFor={(nextPage) => hrefFor({ filter, sort, page: nextPage })}
           />
         </>
-      ) : null}
+      )}
     </div>
   );
+}
+
+function readFilter(raw: string | null): MatchFilter {
+  if (
+    raw === "strong" ||
+    raw === "price" ||
+    raw === "quality" ||
+    raw === "nearby"
+  ) {
+    return raw;
+  }
+  return "all";
+}
+
+function readSort(raw: string | null): "score" | "deadline" | "nearest" {
+  if (raw === "deadline" || raw === "nearest") {
+    return raw;
+  }
+  return "score";
+}
+
+function readPage(raw: string | null): number {
+  const value = Number(raw ?? "1");
+  return Number.isInteger(value) && value >= 1 ? value : 1;
 }
 
 function FilterChip({
@@ -165,20 +228,18 @@ function FilterChip({
 }
 
 function hrefFor({
-  query,
   filter,
   sort,
   page,
 }: {
-  query: MatchQuery;
-  filter?: MatchFilter;
-  sort?: MatchQuery["sort"];
+  filter: MatchFilter;
+  sort: "score" | "deadline" | "nearest";
   page: number;
 }): string {
   const params = new URLSearchParams({
     page: String(page),
-    filter: filter ?? query.filter,
-    sort: sort ?? query.sort,
+    filter,
+    sort,
   });
   return `/farmer/requirements?${params.toString()}`;
 }

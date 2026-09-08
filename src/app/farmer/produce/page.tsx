@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowRight,
@@ -10,23 +12,37 @@ import {
 } from "lucide-react";
 import { EmptyState, linkButtonClass, PageHeader } from "@/components/ui";
 import { ProduceStatusBadge } from "@/components/produce/produce-status-badge";
-import { requirePageUser } from "@/features/auth/lib/page-guards";
-import { getFarmerProfileRecordId } from "@/features/profiles/profile-service";
-import {
-  getFarmerProduceListings,
-} from "@/features/produce/produce-service";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import { fetchProduceListings } from "@/lib/client/api-queries";
+import { kvKeys } from "@/lib/client/query-keys";
+import { LIST_STALE_TIME } from "@/lib/client/query-client";
+import { ScreenError, ScreenSkeleton } from "@/components/dashboard/screen-skeleton";
 import type { ProduceListingView } from "@/features/produce/types";
 
-export const metadata: Metadata = {
-  title: "My Produce",
-};
+export default function FarmerProducePage() {
+  const session = useSessionUser();
+  const userId = session.data?.id;
 
-export const dynamic = "force-dynamic";
+  const produceQuery = useQuery({
+    queryKey: kvKeys.farmer(userId ?? "").produce,
+    queryFn: fetchProduceListings,
+    staleTime: LIST_STALE_TIME,
+    enabled: Boolean(userId),
+  });
 
-export default async function FarmerProducePage() {
-  const user = await requirePageUser();
-  const profileId = await getFarmerProfileRecordId(user.id);
-  const listings = profileId ? await getFarmerProduceListings(profileId) : [];
+  if (!userId || produceQuery.isPending) {
+    return <ScreenSkeleton />;
+  }
+  if (produceQuery.isError) {
+    return (
+      <ScreenError
+        onRetry={() => void produceQuery.refetch()}
+        description="We couldn't load your crops right now. Please try again in a moment."
+      />
+    );
+  }
+
+  const listings = produceQuery.data;
   const activeCount = listings.filter((listing) => listing.status === "active").length;
 
   return (

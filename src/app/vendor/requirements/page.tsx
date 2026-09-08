@@ -1,19 +1,17 @@
-import type { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, Plus } from "lucide-react";
 import { EmptyState, linkButtonClass, PageHeader } from "@/components/ui";
 import { RequirementCard } from "@/components/requirements/requirement-card";
 import { requirementStatusLabel } from "@/components/requirements/requirement-status-badge";
-import { requirePageUser } from "@/features/auth/lib/page-guards";
-import { getVendorProfileRecordId } from "@/features/profiles/profile-service";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import { fetchVendorRequirements } from "@/lib/client/api-queries";
+import { kvKeys } from "@/lib/client/query-keys";
+import { LIST_STALE_TIME } from "@/lib/client/query-client";
+import { ScreenError, ScreenSkeleton } from "@/components/dashboard/screen-skeleton";
 import type { BuyerRequirementStatus } from "@/constants/buyer-requirement-statuses";
-import { listVendorRequirements } from "@/features/buyer-requirements/buyer-requirement-service";
-
-export const metadata: Metadata = {
-  title: "Buying requirements",
-};
-
-export const dynamic = "force-dynamic";
 
 const DISPLAY_ORDER: BuyerRequirementStatus[] = [
   "active",
@@ -23,12 +21,30 @@ const DISPLAY_ORDER: BuyerRequirementStatus[] = [
   "cancelled",
 ];
 
-export default async function VendorRequirementsPage() {
-  const user = await requirePageUser();
-  const vendorProfileId = await getVendorProfileRecordId(user.id);
-  const result = vendorProfileId
-    ? await listVendorRequirements(vendorProfileId)
-    : { requirements: [], counts: null };
+export default function VendorRequirementsPage() {
+  const session = useSessionUser();
+  const userId = session.data?.id;
+
+  const requirementsQuery = useQuery({
+    queryKey: kvKeys.vendor(userId ?? "").requirements,
+    queryFn: fetchVendorRequirements,
+    staleTime: LIST_STALE_TIME,
+    enabled: Boolean(userId),
+  });
+
+  if (!userId || requirementsQuery.isPending) {
+    return <ScreenSkeleton />;
+  }
+  if (requirementsQuery.isError) {
+    return (
+      <ScreenError
+        onRetry={() => void requirementsQuery.refetch()}
+        description="We couldn't load your requirements right now. Please try again in a moment."
+      />
+    );
+  }
+
+  const result = requirementsQuery.data;
 
   const summary = result.counts
     ? DISPLAY_ORDER.filter((status) => result.counts![status] > 0)

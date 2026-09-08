@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Ban, CheckCircle2, Handshake, XCircle } from "lucide-react";
 import { postJson, ApiRequestError } from "@/lib/client/fetch-json";
 import { Alert, Button, Field, Input, Textarea } from "@/components/ui";
+import { useSessionUser } from "@/lib/client/use-session-user";
+import { invalidateAfterNegotiationAction } from "@/lib/client/query-keys";
 import type { OfferView } from "@/features/offers/types";
 
 type OfferParty = "farmer" | "vendor";
@@ -29,7 +31,9 @@ export function NegotiationActions({
   offer: OfferView;
   role: OfferParty;
 }) {
-  const router = useRouter();
+  const queryClient = useQueryClient();
+  const session = useSessionUser();
+  const userId = session.data?.id;
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"accept" | "reject" | "withdraw" | null>(null);
   const [counterOpen, setCounterOpen] = useState(false);
@@ -71,7 +75,9 @@ export function NegotiationActions({
     try {
       await postJson(`/api/${role}/offers/${offer.id}/${action}`, {});
       setConfirm(null);
-      router.refresh();
+      if (userId) {
+        await invalidateAfterNegotiationAction(queryClient, role, userId);
+      }
     } catch (err) {
       setError(
         err instanceof ApiRequestError
@@ -97,7 +103,9 @@ export function NegotiationActions({
       });
       setCounterOpen(false);
       setCounterNote("");
-      router.refresh();
+      if (userId) {
+        await invalidateAfterNegotiationAction(queryClient, role, userId);
+      }
     } catch (err) {
       setError(
         err instanceof ApiRequestError
