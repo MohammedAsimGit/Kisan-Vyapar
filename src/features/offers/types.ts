@@ -106,6 +106,10 @@ export interface OfferView {
   turn: OfferParty | null;
   /** Present when the negotiation is accepted and an order exists. */
   orderId?: string;
+  /** Profile ID of the user who accepted the final offer. */
+  orderInitiatorId?: string;
+  /** Role of the order initiator. */
+  orderInitiatorRole?: OfferParty;
   createdAt: string;
   updatedAt: string;
 }
@@ -207,6 +211,8 @@ interface OfferDocShape {
   currency?: string;
   totalAmount: number;
   status: OfferStatus;
+  orderInitiatorId?: unknown;
+  orderInitiatorRole?: OfferParty;
   history?: Array<{
     party: OfferParty;
     action: OfferHistoryAction;
@@ -309,6 +315,8 @@ export function toOfferView(doc: OfferDocShape, context: OfferViewContext): Offe
     vendor: { businessName: context.businessName },
     history,
     turn: partyToRespond(doc.status),
+    orderInitiatorId: doc.orderInitiatorId ? String(doc.orderInitiatorId) : undefined,
+    orderInitiatorRole: doc.orderInitiatorRole ?? undefined,
     createdAt: doc.createdAt ? doc.createdAt.toISOString() : "",
     updatedAt: doc.updatedAt ? doc.updatedAt.toISOString() : "",
   };

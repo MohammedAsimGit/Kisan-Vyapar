@@ -22,7 +22,6 @@ import { getCropById } from "@/constants/crops";
 import type { MeasurementUnit } from "@/constants/measurement-units";
 import { QUINTAL_CONVERSION } from "@/features/matching/config";
 import { ConflictError, NotFoundError } from "@/lib/errors";
-import { createOrderFromOffer } from "@/features/orders/order-service";
 import { createNotification } from "@/features/notifications/notification-service";
 import { NOTIFICATION_TYPE } from "@/constants/notification-types";
 import { parseOrThrow } from "@/lib/validation";
@@ -869,7 +868,13 @@ export async function acceptOffer(
   const accepted = (await OfferModel.findOneAndUpdate(
     { _id: offerId, status: doc.status },
     {
-      $set: { status: ACCEPTED },
+      $set: {
+        status: ACCEPTED,
+        acceptedBy: actor.profileId,
+        acceptedAt: new Date(),
+        orderInitiatorId: actor.profileId,
+        orderInitiatorRole: actor.role,
+      },
       $push: {
         history: historyEvent(
           actor.role,
@@ -910,25 +915,9 @@ export async function acceptOffer(
     );
   }
 
-  // Sprint 7 boundary: create the Order from the accepted offer.
-  await createOrderFromOffer({
-    _id: accepted._id,
-    produceListing: accepted.produceListing,
-    requirement: accepted.requirement,
-    farmer: accepted.farmer,
-    vendor: accepted.vendor,
-    quantity: accepted.quantity,
-    unit: accepted.unit,
-    pricePerUnit: accepted.pricePerUnit,
-    totalAmount: accepted.totalAmount,
-    currency: accepted.currency,
-  });
-
   // Notify the other party about acceptance
   const acceptedById = actor.profileId;
-  const notifyParty = accepted.farmer.equals(acceptedById) ? accepted.farmer : accepted.vendor;
   const otherParty = accepted.farmer.equals(acceptedById) ? accepted.vendor : accepted.farmer;
-  const notifyRole = accepted.farmer.equals(acceptedById) ? "farmer" : "vendor";
   const otherRole = accepted.farmer.equals(acceptedById) ? "vendor" : "farmer";
   void createNotification({
     recipientId: String(otherParty),
@@ -936,16 +925,6 @@ export async function acceptOffer(
     type: NOTIFICATION_TYPE.OFFER_ACCEPTED,
     title: "Offer Accepted",
     message: `Your offer for ${accepted.quantity} ${accepted.unit} has been accepted.`,
-    entityType: "offer",
-    entityId: offerId,
-  });
-  // Notify the accepting party too
-  void createNotification({
-    recipientId: String(notifyParty),
-    recipientRole: notifyRole,
-    type: NOTIFICATION_TYPE.ORDER_CREATED,
-    title: "Order Created",
-    message: `An order has been created from your accepted negotiation.`,
     entityType: "offer",
     entityId: offerId,
   });

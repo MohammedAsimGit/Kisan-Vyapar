@@ -104,6 +104,14 @@ export interface Offer {
   status: OfferStatus;
   /** Immutable, append-only negotiation record. */
   history: OfferHistoryEvent[];
+  /** Profile ID of the user who accepted the final offer. */
+  acceptedBy?: Types.ObjectId;
+  /** Timestamp when the final offer was accepted. */
+  acceptedAt?: Date;
+  /** Profile ID of the user authorized to create the order. */
+  orderInitiatorId?: Types.ObjectId;
+  /** Role of the order initiator (FARMER or VENDOR). */
+  orderInitiatorRole?: OfferParty;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -163,6 +171,20 @@ const offerSchema = new Schema<Offer>(
     history: {
       type: [offerHistoryEventSchema],
       default: [],
+    },
+    acceptedBy: {
+      type: Schema.Types.ObjectId,
+      ref: MODEL_NAMES.FARMER_PROFILE,
+    },
+    acceptedAt: {
+      type: Date,
+    },
+    orderInitiatorId: {
+      type: Schema.Types.ObjectId,
+    },
+    orderInitiatorRole: {
+      type: String,
+      enum: OFFER_PARTY_VALUES,
     },
   },
   { timestamps: true },

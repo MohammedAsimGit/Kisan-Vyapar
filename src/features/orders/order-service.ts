@@ -4,6 +4,7 @@ import type { Types } from "mongoose";
 import {
   BuyerRequirementModel,
   FarmerProfileModel,
+  OfferModel,
   OrderModel,
   ProduceListingModel,
   UserModel,
@@ -377,4 +378,78 @@ export async function cancelOrder(
     throw new NotFoundError("Order could not be cancelled — it may have changed.");
   }
   return buildOrderView(updated);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Create Order from accepted negotiation (initiator-only)                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Creates an Order from an accepted negotiation. Only the order initiator
+ * (the user who accepted the final offer) is authorized to call this.
+ *
+ * @throws ConflictError if the order already exists or the user is not the initiator.
+ * @throws NotFoundError if the offer is not found or not accepted.
+ */
+export async function createOrderFromNegotiation(
+  actor: OrderActor,
+  offerId: string,
+): Promise<OrderView> {
+  await connectToDatabase();
+  const offer = await OfferModel.findById(offerId).lean();
+  if (!offer) {
+    throw new NotFoundError("Negotiation not found.");
+  }
+
+  // Must be accepted
+  if (offer.status !== "accepted") {
+    throw new ConflictError("This negotiation has not been accepted yet.");
+  }
+
+  // Must have an order initiator recorded
+  if (!offer.orderInitiatorId) {
+    throw new ConflictError("Order initiation information is unavailable for this negotiation.");
+  }
+
+  // Only the order initiator can create the order
+  const initiatorId = String(offer.orderInitiatorId);
+  if (actor.profileId !== initiatorId) {
+    throw new ConflictError("Only the user who accepted the offer can create the order.");
+  }
+
+  // Check for duplicate order
+  const existingOrder = await OrderModel.findOne({ offer: offer._id }).lean();
+  if (existingOrder) {
+    return buildOrderView(existingOrder as Order & { _id: Types.ObjectId });
+  }
+
+  // Create order from the accepted offer's commercial terms
+  const produce = await ProduceListingModel.findById(offer.produceListing)
+    .select({ crop: 1, quality: 1, location: 1 })
+    .lean() as { crop: string; quality: QualityGrade; location?: { label?: string; geo?: GeoPoint; address?: PostalAddress } } | null;
+  const requirement = await BuyerRequirementModel.findById(offer.requirement)
+    .select({ location: 1 })
+    .lean() as { location?: { label?: string; geo?: GeoPoint; address?: PostalAddress } } | null;
+
+  const orderNumber = await generateOrderNumber();
+
+  const order = await OrderModel.create({
+    orderNumber,
+    produceListing: offer.produceListing,
+    offer: offer._id,
+    seller: offer.farmer,
+    buyer: offer.vendor,
+    quantity: offer.quantity,
+    unit: offer.unit,
+    agreedPricePerUnit: offer.pricePerUnit,
+    currency: (offer.currency ?? "INR") as Currency,
+    totalValue: offer.totalAmount,
+    status: ORDER_STATUS.CONFIRMED,
+    pickupLocation: produce?.location,
+    deliveryLocation: requirement?.location,
+    cropName: produce?.crop ?? "Unknown",
+    quality: produce?.quality,
+  });
+
+  return buildOrderView(order);
 }
