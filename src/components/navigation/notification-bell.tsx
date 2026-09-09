@@ -164,7 +164,7 @@ export function NotificationBell() {
           />
           <div
             ref={panelRef}
-            className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-border bg-surface shadow-raised sm:left-auto sm:top-auto sm:right-0 sm:translate-x-0 sm:translate-y-0 sm:mt-2 sm:absolute sm:top-full"
+            className="fixed left-4 right-4 top-16 z-50 mx-auto max-w-sm overflow-hidden rounded-2xl border border-border bg-surface shadow-raised sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:absolute sm:top-full sm:mx-0 sm:w-[calc(100vw-2rem)]"
             role="dialog"
             aria-label="Notifications"
           >
