@@ -11,6 +11,12 @@ import {
   type OrderStatus,
 } from "@/constants/order-statuses";
 import { MODEL_NAMES } from "./model-names";
+import { locationDefinition } from "./location-definition";
+import type { GeoPoint, PostalAddress } from "@/types/geo";
+import {
+  QUALITY_GRADE_VALUES,
+  type QualityGrade,
+} from "@/constants/quality-grades";
 
 export interface Order {
   orderNumber?: string;
@@ -25,6 +31,18 @@ export interface Order {
   totalValue: number;
   status: OrderStatus;
   cancellationReason?: string;
+  cropName?: string;
+  quality?: QualityGrade;
+  pickupLocation?: {
+    label?: string;
+    geo?: GeoPoint;
+    address?: PostalAddress;
+  };
+  deliveryLocation?: {
+    label?: string;
+    geo?: GeoPoint;
+    address?: PostalAddress;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -90,6 +108,17 @@ const orderSchema = new Schema(
       trim: true,
       maxlength: 400,
     },
+    cropName: {
+      type: String,
+      trim: true,
+      maxlength: 60,
+    },
+    quality: {
+      type: String,
+      enum: QUALITY_GRADE_VALUES,
+    },
+    pickupLocation: locationDefinition,
+    deliveryLocation: locationDefinition,
   },
   { timestamps: true },
 );

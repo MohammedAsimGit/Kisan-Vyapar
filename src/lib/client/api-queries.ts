@@ -115,3 +115,65 @@ export async function fetchFarmerRequirementDigest(params: {
     `/api/farmer/requirements${digestQueryString(params)}`,
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* Orders                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export interface OrderListResult {
+  orders: unknown[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export async function fetchFarmerOrders(
+  page: number,
+): Promise<OrderListResult> {
+  return getJson<OrderListResult>(`/api/farmer/orders?page=${page}`);
+}
+
+export async function fetchFarmerOrder(orderId: string): Promise<unknown> {
+  return getJson<unknown>(`/api/farmer/orders/${orderId}`);
+}
+
+export async function fetchVendorOrders(
+  page: number,
+): Promise<OrderListResult> {
+  return getJson<OrderListResult>(`/api/vendor/orders?page=${page}`);
+}
+
+export async function fetchVendorOrder(orderId: string): Promise<unknown> {
+  return getJson<unknown>(`/api/vendor/orders/${orderId}`);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Logistics                                                                   */
+/* -------------------------------------------------------------------------- */
+
+export interface LogisticsListResult {
+  logistics: unknown[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export async function fetchFarmerLogistics(
+  page: number,
+): Promise<LogisticsListResult> {
+  return getJson<LogisticsListResult>(`/api/farmer/logistics?page=${page}`);
+}
+
+export async function fetchFarmerLogisticsItem(logisticsId: string): Promise<unknown> {
+  return getJson<unknown>(`/api/farmer/logistics/${logisticsId}`);
+}
+
+export async function fetchVendorLogistics(
+  page: number,
+): Promise<LogisticsListResult> {
+  return getJson<LogisticsListResult>(`/api/vendor/logistics?page=${page}`);
+}
+
+export async function fetchVendorLogisticsItem(logisticsId: string): Promise<unknown> {
+  return getJson<unknown>(`/api/vendor/logistics/${logisticsId}`);
+}

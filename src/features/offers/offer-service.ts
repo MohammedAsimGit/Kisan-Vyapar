@@ -21,6 +21,7 @@ import { getCropById } from "@/constants/crops";
 import type { MeasurementUnit } from "@/constants/measurement-units";
 import { QUINTAL_CONVERSION } from "@/features/matching/config";
 import { ConflictError, NotFoundError } from "@/lib/errors";
+import { createOrderFromOffer } from "@/features/orders/order-service";
 import { parseOrThrow } from "@/lib/validation";
 import type { OfferHistoryAction, OfferParty } from "@/models/offer";
 import {
@@ -858,6 +859,20 @@ export async function acceptOffer(
       { $set: { status: FULFILLED_REQUIREMENT } },
     );
   }
+
+  // Sprint 7 boundary: create the Order from the accepted offer.
+  await createOrderFromOffer({
+    _id: accepted._id,
+    produceListing: accepted.produceListing,
+    requirement: accepted.requirement,
+    farmer: accepted.farmer,
+    vendor: accepted.vendor,
+    quantity: accepted.quantity,
+    unit: accepted.unit,
+    pricePerUnit: accepted.pricePerUnit,
+    totalAmount: accepted.totalAmount,
+    currency: accepted.currency,
+  });
 
   return toOfferView(accepted, await buildContext(accepted));
 }

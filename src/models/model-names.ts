@@ -7,6 +7,7 @@ export const MODEL_NAMES = {
   MARKET_PRICE: "MarketPrice",
   OFFER: "Offer",
   ORDER: "Order",
+  LOGISTICS: "Logistics",
   SESSION: "Session",
 } as const;
 

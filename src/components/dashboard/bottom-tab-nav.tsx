@@ -9,7 +9,6 @@ import {
   Home,
   Package,
   Sprout,
-  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -24,14 +23,14 @@ const ROLE_TABS: Record<"farmer" | "vendor", BottomTab[]> = {
   farmer: [
     { label: "Home", href: "/farmer", icon: Home },
     { label: "My Produce", href: "/farmer/produce", icon: Sprout },
-    { label: "Buyers", href: "/farmer/requirements", icon: Users },
     { label: "Offers", href: "/farmer/offers", icon: Handshake },
+    { label: "Orders", href: "/farmer/orders", icon: Package },
   ],
   vendor: [
     { label: "Home", href: "/vendor", icon: Home },
     { label: "Requirements", href: "/vendor/requirements", icon: ClipboardList },
     { label: "Offers", href: "/vendor/offers", icon: Handshake },
-    { label: "Orders", icon: Package, planned: true },
+    { label: "Orders", href: "/vendor/orders", icon: Package },
   ],
 };
 

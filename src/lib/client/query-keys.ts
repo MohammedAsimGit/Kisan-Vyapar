@@ -31,6 +31,11 @@ export const kvKeys = {
     offer: (offerId: string) => ["kv", "farmer", userId, "offers", { id: offerId }] as const,
     requirements: (params: DigestQueryParams) =>
       ["kv", "farmer", userId, "requirements", params] as const,
+    orders: (page: number) => ["kv", "farmer", userId, "orders", { page }] as const,
+    order: (orderId: string) => ["kv", "farmer", userId, "orders", { id: orderId }] as const,
+    logistics: (page: number) => ["kv", "farmer", userId, "logistics", { page }] as const,
+    logisticsItem: (logisticsId: string) =>
+      ["kv", "farmer", userId, "logistics", { id: logisticsId }] as const,
   }),
 
   vendor: (userId: string) => ({
@@ -41,6 +46,11 @@ export const kvKeys = {
     offers: (page: number, requirementId?: string) =>
       ["kv", "vendor", userId, "offers", { page, requirementId }] as const,
     offer: (offerId: string) => ["kv", "vendor", userId, "offers", { id: offerId }] as const,
+    orders: (page: number) => ["kv", "vendor", userId, "orders", { page }] as const,
+    order: (orderId: string) => ["kv", "vendor", userId, "orders", { id: orderId }] as const,
+    logistics: (page: number) => ["kv", "vendor", userId, "logistics", { page }] as const,
+    logisticsItem: (logisticsId: string) =>
+      ["kv", "vendor", userId, "logistics", { id: logisticsId }] as const,
   }),
 } as const;
 
@@ -61,6 +71,18 @@ export function invalidateOffers(
   return queryClient.invalidateQueries({
     queryKey: ["kv", role, userId, "offers"],
   });
+}
+
+/** Orders + logistics list for one user. */
+export function invalidateOrders(
+  queryClient: QueryClient,
+  role: CachedRole,
+  userId: string,
+): Promise<void> {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["kv", role, userId, "orders"] }),
+    queryClient.invalidateQueries({ queryKey: ["kv", role, userId, "logistics"] }),
+  ]).then(() => undefined);
 }
 
 /** Vendor offer list filtered by a specific requirement (incl. pagination). */

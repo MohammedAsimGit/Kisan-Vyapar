@@ -25,5 +25,8 @@ export type { Offer } from "./offer";
 export { OrderModel } from "./order";
 export type { Order } from "./order";
 
+export { LogisticsModel } from "./logistics";
+export type { Logistics } from "./logistics";
+
 export { SessionModel } from "./session";
 export type { Session } from "./session";
