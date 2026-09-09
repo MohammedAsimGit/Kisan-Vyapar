@@ -155,12 +155,19 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div
-          ref={panelRef}
-          className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-2xl border border-border bg-surface shadow-raised"
-          role="dialog"
-          aria-label="Notifications"
-        >
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/20 sm:bg-transparent"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            ref={panelRef}
+            className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-border bg-surface shadow-raised sm:left-auto sm:top-auto sm:right-0 sm:translate-x-0 sm:translate-y-0 sm:mt-2 sm:absolute sm:top-full"
+            role="dialog"
+            aria-label="Notifications"
+          >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold text-foreground">
@@ -291,6 +298,7 @@ export function NotificationBell() {
               ))}
           </div>
         </div>
+        </>
       )}
     </div>
   );
