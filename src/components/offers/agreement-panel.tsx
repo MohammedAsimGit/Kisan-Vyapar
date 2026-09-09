@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Handshake } from "lucide-react";
 import { Button } from "@/components/ui";
 import type { OfferView } from "@/features/offers/types";
@@ -11,13 +12,21 @@ function formatInr(value: number): string {
 }
 
 /**
- * Shown when a negotiation is accepted. The agreed terms are final and
- * immutable; an order is deliberately NOT created here — Sprint 7 builds on
- * this boundary.
+ * Shown when a negotiation is accepted. Links to the order that was
+ * automatically created from the accepted offer.
  */
-export function AgreementPanel({ offer }: { offer: OfferView }) {
+export function AgreementPanel({
+  offer,
+  role,
+}: {
+  offer: OfferView;
+  role: "farmer" | "vendor";
+}) {
   const buyerName = offer.vendor.businessName ?? "The buyer";
   const farmerName = offer.farmer.farmerName ?? "The farmer";
+  const orderHref = role === "farmer"
+    ? `/farmer/orders/${offer.orderId}`
+    : `/vendor/orders/${offer.orderId}`;
 
   return (
     <div className="rounded-3xl border border-success-border bg-success-bg/50 p-6 shadow-card sm:p-8">
@@ -57,17 +66,17 @@ export function AgreementPanel({ offer }: { offer: OfferView }) {
           The final terms above are locked and traceable to every step of the
           negotiation.
         </p>
-        <Button
-          size="lg"
-          disabled
-          title="Order creation arrives in the next update"
-        >
-          Continue to Order · Next update
-        </Button>
-        <p className="text-xs text-muted-foreground">
-          No order is created yet — order creation is the next update and will
-          build directly on this agreement.
-        </p>
+        {offer.orderId ? (
+          <Link href={orderHref} className="block">
+            <Button size="lg">
+              Continue to Order
+            </Button>
+          </Link>
+        ) : (
+          <Button size="lg" disabled>
+            Order not found
+          </Button>
+        )}
       </div>
     </div>
   );

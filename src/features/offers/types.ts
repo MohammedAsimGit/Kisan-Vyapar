@@ -104,6 +104,8 @@ export interface OfferView {
   history: OfferHistoryView[];
   /** Whose response is awaited; null once the negotiation is terminal. */
   turn: OfferParty | null;
+  /** Present when the negotiation is accepted and an order exists. */
+  orderId?: string;
   createdAt: string;
   updatedAt: string;
 }

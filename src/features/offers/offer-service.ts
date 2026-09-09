@@ -5,6 +5,7 @@ import {
   BuyerRequirementModel,
   FarmerProfileModel,
   OfferModel,
+  OrderModel,
   ProduceListingModel,
   UserModel,
   VendorProfileModel,
@@ -482,7 +483,16 @@ export async function getOfferForFarmer(
   if (!doc) {
     return null;
   }
-  return toOfferView(doc, await buildContext(doc));
+  const view = toOfferView(doc, await buildContext(doc));
+  if (doc.status === ACCEPTED) {
+    const order = await OrderModel.findOne({ offer: doc._id })
+      .select({ _id: 1 })
+      .lean();
+    if (order) {
+      view.orderId = String(order._id);
+    }
+  }
+  return view;
 }
 
 export async function getOfferForVendor(
@@ -493,7 +503,16 @@ export async function getOfferForVendor(
   if (!doc) {
     return null;
   }
-  return toOfferView(doc, await buildContext(doc));
+  const view = toOfferView(doc, await buildContext(doc));
+  if (doc.status === ACCEPTED) {
+    const order = await OrderModel.findOne({ offer: doc._id })
+      .select({ _id: 1 })
+      .lean();
+    if (order) {
+      view.orderId = String(order._id);
+    }
+  }
+  return view;
 }
 
 export interface OfferListResult {

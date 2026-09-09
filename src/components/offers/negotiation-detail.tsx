@@ -195,7 +195,7 @@ export function NegotiationDetail({
 
       {/* Outcome + actions */}
       {offer.status === "accepted" ? (
-        <AgreementPanel offer={offer} />
+        <AgreementPanel offer={offer} role={role} />
       ) : (
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
           <h2 className="text-base font-semibold tracking-tight">Your move</h2>
@@ -219,13 +219,14 @@ export function NegotiationDetail({
         </div>
       </section>
 
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Badge tone="outline" className="px-1.5 py-0.5 text-[10px]">
-          Sprint 7
-        </Badge>
-        An accepted agreement becomes an order in the next update — nothing is
-        created automatically here.
-      </p>
+      {offer.status === "accepted" && offer.orderId && (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Badge tone="outline" className="px-1.5 py-0.5 text-[10px]">
+            Order
+          </Badge>
+          An order has been created from this agreement.
+        </p>
+      )}
     </div>
   );
 }
