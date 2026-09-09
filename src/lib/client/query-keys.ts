@@ -22,6 +22,8 @@ export interface DigestQueryParams {
 export const kvKeys = {
   /** Authenticated session — same key for every user, data is server-derived. */
   session: ["kv", "session"] as const,
+  notifications: (userId: string) => ["kv", "notifications", userId] as const,
+  unreadCount: (userId: string) => ["kv", "notifications", userId, "unread"] as const,
 
   farmer: (userId: string) => ({
     all: ["kv", "farmer", userId] as const,

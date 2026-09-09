@@ -177,3 +177,34 @@ export async function fetchVendorLogistics(
 export async function fetchVendorLogisticsItem(logisticsId: string): Promise<unknown> {
   return getJson<unknown>(`/api/vendor/logistics/${logisticsId}`);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Notifications                                                               */
+/* -------------------------------------------------------------------------- */
+
+export interface NotificationListResult {
+  notifications: Array<{
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    entityType?: string;
+    entityId?: string;
+    isRead: boolean;
+    createdAt: string;
+  }>;
+  total: number;
+  unreadCount: number;
+}
+
+export async function fetchNotifications(
+  page: number,
+): Promise<NotificationListResult> {
+  return getJson<NotificationListResult>(
+    `/api/notifications?page=${page}`,
+  );
+}
+
+export async function fetchUnreadCount(): Promise<{ count: number }> {
+  return getJson<{ count: number }>("/api/notifications/unread-count");
+}

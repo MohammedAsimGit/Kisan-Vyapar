@@ -59,9 +59,8 @@
   --shadow-inset: inset 0 1px 0 rgb(255 255 255 / 0.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
+.dark {
+  color-scheme: dark;
 
     --background: #0a0d0b;
     --foreground: #edf0ea;
@@ -105,7 +104,6 @@
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 14px 34px -20px rgb(0 0 0 / 0.6);
     --shadow-raised: 0 2px 4px rgb(0 0 0 / 0.4), 0 26px 60px -26px rgb(0 0 0 / 0.8);
     --shadow-inset: inset 0 1px 0 rgb(255 255 255 / 0.04);
-  }
 }
 
 @theme inline {

@@ -25,6 +25,7 @@ export function LogoutButton({
       await postJson("/api/auth/logout", {});
       // Security: never let the next session see this user's cached data.
       queryClient.clear();
+      // clear() already removes all cached data including notifications
     } finally {
       router.replace("/");
       router.refresh();

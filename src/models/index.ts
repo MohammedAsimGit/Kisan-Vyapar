@@ -30,3 +30,6 @@ export type { Logistics } from "./logistics";
 
 export { SessionModel } from "./session";
 export type { Session } from "./session";
+
+export { NotificationModel } from "./notification";
+export type { Notification } from "./notification";

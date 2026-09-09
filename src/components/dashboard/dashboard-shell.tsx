@@ -3,7 +3,9 @@ import type { SessionUser } from "@/features/auth/types";
 import { roleHomePath } from "@/features/auth/paths";
 import { Avatar, Badge, PageContainer } from "@/components/ui";
 import { Brand } from "@/components/shared/brand";
-import { LogoutButton } from "@/components/auth/logout-button";
+import { ThemeToggle } from "@/components/navigation/theme-toggle";
+import { NotificationBell } from "@/components/navigation/notification-bell";
+import { AccountMenu } from "@/components/navigation/account-menu";
 import { DashboardNav } from "./dashboard-nav";
 import { BottomTabNav } from "./bottom-tab-nav";
 
@@ -29,7 +31,8 @@ export function DashboardShell({
         <PageContainer wide className="flex items-center justify-between gap-3 py-3">
           <Brand href={home} />
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Desktop: show user info */}
             <div className="hidden items-center gap-2.5 rounded-full border border-border bg-background py-1 pl-1 pr-3 sm:flex">
               <Avatar name={user.fullName} className="size-8 text-xs" />
               <div className="leading-tight">
@@ -41,7 +44,11 @@ export function DashboardShell({
                 </Badge>
               </div>
             </div>
-            <LogoutButton />
+
+            {/* Theme, Notifications, Menu — both mobile and desktop */}
+            <ThemeToggle />
+            <NotificationBell />
+            <AccountMenu role={user.role as "farmer" | "vendor" | "admin"} />
           </div>
         </PageContainer>
 

@@ -21,6 +21,8 @@ import {
 import { ORDER_STATUS } from "@/constants/order-statuses";
 import type { MeasurementUnit } from "@/constants/measurement-units";
 import { ConflictError, NotFoundError } from "@/lib/errors";
+import { createNotification } from "@/features/notifications/notification-service";
+import { type NotificationType } from "@/constants/notification-types";
 import { parseOrThrow } from "@/lib/validation";
 import { z } from "zod";
 import type { GeoPoint, PostalAddress } from "@/types/geo";
@@ -660,6 +662,29 @@ export async function transitionLogisticsStatus(
       { _id: doc.orderId, status: ORDER_STATUS.CONFIRMED },
       { $set: { status: ORDER_STATUS.IN_TRANSIT } },
     );
+  }
+
+  // Notify both parties about logistics status change
+  const LOGISTICS_NOTIFICATIONS: Partial<Record<LogisticsStatus, { type: typeof import("@/constants/notification-types").NOTIFICATION_TYPE[keyof typeof import("@/constants/notification-types").NOTIFICATION_TYPE]; title: string; message: string }>> = {
+    scheduled: { type: "logistics_scheduled", title: "Transport Scheduled", message: "Transport has been scheduled for your order." },
+    picked_up: { type: "in_transit", title: "Picked Up", message: "Produce has been picked up and is on its way." },
+    in_transit: { type: "in_transit", title: "In Transit", message: "Your shipment is in transit." },
+    delivered: { type: "delivered", title: "Delivered", message: "Your order has been delivered." },
+  };
+  const notification = LOGISTICS_NOTIFICATIONS[targetStatus];
+  if (notification) {
+    for (const recipientId of [String(doc.farmerId), String(doc.vendorId)]) {
+      const recipientRole = recipientId === String(doc.farmerId) ? "farmer" : "vendor";
+      void createNotification({
+        recipientId,
+        recipientRole,
+        type: notification.type as NotificationType,
+        title: notification.title,
+        message: notification.message,
+        entityType: "logistics",
+        entityId: String(doc.orderId),
+      });
+    }
   }
 
   return buildLogisticsView(updated);

@@ -9,6 +9,7 @@ export const MODEL_NAMES = {
   ORDER: "Order",
   LOGISTICS: "Logistics",
   SESSION: "Session",
+  NOTIFICATION: "Notification",
 } as const;
 
 export type ModelName = (typeof MODEL_NAMES)[keyof typeof MODEL_NAMES];

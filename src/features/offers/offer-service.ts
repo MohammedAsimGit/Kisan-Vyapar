@@ -23,6 +23,8 @@ import type { MeasurementUnit } from "@/constants/measurement-units";
 import { QUINTAL_CONVERSION } from "@/features/matching/config";
 import { ConflictError, NotFoundError } from "@/lib/errors";
 import { createOrderFromOffer } from "@/features/orders/order-service";
+import { createNotification } from "@/features/notifications/notification-service";
+import { NOTIFICATION_TYPE } from "@/constants/notification-types";
 import { parseOrThrow } from "@/lib/validation";
 import type { OfferHistoryAction, OfferParty } from "@/models/offer";
 import {
@@ -667,6 +669,19 @@ export async function createOffer(
   });
 
   const fresh = (await OfferModel.findById(doc._id).lean()) as unknown as LeanOfferDoc;
+
+  // Notify the vendor about the new offer
+  const cropName = getCropById(produce.crop)?.name ?? produce.crop;
+  void createNotification({
+    recipientId: String(requirement.vendor),
+    recipientRole: "vendor",
+    type: NOTIFICATION_TYPE.NEW_OFFER,
+    title: "New Offer",
+    message: `A farmer offered ${validated.quantity} ${produce.unit} of ${cropName} at ₹${validated.pricePerUnit}/${produce.unit}.`,
+    entityType: "offer",
+    entityId: String(doc._id),
+  });
+
   return toOfferView(fresh, await buildContext(fresh));
 }
 
@@ -737,6 +752,22 @@ export async function counterOffer(
       "This negotiation changed while you were responding. Please refresh and try again.",
     );
   }
+
+  // Notify the other party about the counter
+  const recipientId = actor.role === "farmer"
+    ? String(doc.vendor)
+    : String(doc.farmer);
+  const recipientRole = actor.role === "farmer" ? "vendor" : "farmer";
+  void createNotification({
+    recipientId,
+    recipientRole,
+    type: NOTIFICATION_TYPE.COUNTER_OFFER,
+    title: "Counter Offer",
+    message: `${actor.role === "farmer" ? "A farmer" : "A buyer"} countered at ₹${pricePerUnit}/${doc.unit}.`,
+    entityType: "offer",
+    entityId: offerId,
+  });
+
   return toOfferView(updated, await buildContext(updated));
 }
 
@@ -893,6 +924,32 @@ export async function acceptOffer(
     currency: accepted.currency,
   });
 
+  // Notify the other party about acceptance
+  const acceptedById = actor.profileId;
+  const notifyParty = accepted.farmer.equals(acceptedById) ? accepted.farmer : accepted.vendor;
+  const otherParty = accepted.farmer.equals(acceptedById) ? accepted.vendor : accepted.farmer;
+  const notifyRole = accepted.farmer.equals(acceptedById) ? "farmer" : "vendor";
+  const otherRole = accepted.farmer.equals(acceptedById) ? "vendor" : "farmer";
+  void createNotification({
+    recipientId: String(otherParty),
+    recipientRole: otherRole,
+    type: NOTIFICATION_TYPE.OFFER_ACCEPTED,
+    title: "Offer Accepted",
+    message: `Your offer for ${accepted.quantity} ${accepted.unit} has been accepted.`,
+    entityType: "offer",
+    entityId: offerId,
+  });
+  // Notify the accepting party too
+  void createNotification({
+    recipientId: String(notifyParty),
+    recipientRole: notifyRole,
+    type: NOTIFICATION_TYPE.ORDER_CREATED,
+    title: "Order Created",
+    message: `An order has been created from your accepted negotiation.`,
+    entityType: "offer",
+    entityId: offerId,
+  });
+
   return toOfferView(accepted, await buildContext(accepted));
 }
 
@@ -932,6 +989,18 @@ export async function rejectOffer(
       "This negotiation changed while you were responding. Please refresh and try again.",
     );
   }
+  // Notify the other party about rejection
+  const rejectRecipient = actor.role === "farmer" ? String(doc.vendor) : String(doc.farmer);
+  const rejectRole = actor.role === "farmer" ? "vendor" : "farmer";
+  void createNotification({
+    recipientId: rejectRecipient,
+    recipientRole: rejectRole,
+    type: NOTIFICATION_TYPE.OFFER_REJECTED,
+    title: "Offer Rejected",
+    message: `An offer for ${doc.quantity} ${doc.unit} has been rejected.`,
+    entityType: "offer",
+    entityId: offerId,
+  });
   return toOfferView(updated, await buildContext(updated));
 }
 
@@ -971,5 +1040,17 @@ export async function withdrawOffer(
       "This negotiation changed while you were responding. Please refresh and try again.",
     );
   }
+  // Notify the other party about withdrawal
+  const withdrawRecipient = actor.role === "farmer" ? String(doc.vendor) : String(doc.farmer);
+  const withdrawRole = actor.role === "farmer" ? "vendor" : "farmer";
+  void createNotification({
+    recipientId: withdrawRecipient,
+    recipientRole: withdrawRole,
+    type: NOTIFICATION_TYPE.OFFER_WITHDRAWN,
+    title: "Offer Withdrawn",
+    message: `An offer for ${doc.quantity} ${doc.unit} has been withdrawn.`,
+    entityType: "offer",
+    entityId: offerId,
+  });
   return toOfferView(updated, await buildContext(updated));
 }
