@@ -5,6 +5,8 @@ export const LOGISTICS_STATUS = {
   SCHEDULED: "scheduled",
   PICKED_UP: "picked_up",
   IN_TRANSIT: "in_transit",
+  VENDOR_DELIVERY_PENDING: "vendor_delivery_pending",
+  FARMER_DELIVERY_PENDING: "farmer_delivery_pending",
   DELIVERED: "delivered",
   CANCELLED: "cancelled",
 } as const;
@@ -24,7 +26,9 @@ export const LOGISTICS_TRANSITIONS: Record<LogisticsStatus, LogisticsStatus[]> =
   requested: ["scheduled", "cancelled"],
   scheduled: ["picked_up", "cancelled"],
   picked_up: ["in_transit"],
-  in_transit: ["delivered"],
+  in_transit: ["vendor_delivery_pending"],
+  vendor_delivery_pending: ["farmer_delivery_pending"],
+  farmer_delivery_pending: ["delivered"],
   delivered: [],
   cancelled: [],
 };
@@ -43,6 +47,8 @@ export const LOGISTICS_STATUS_LABELS: Record<LogisticsStatus, string> = {
   scheduled: "Scheduled",
   picked_up: "Picked Up",
   in_transit: "In Transit",
+  vendor_delivery_pending: "Waiting for Farmer Confirmation",
+  farmer_delivery_pending: "Delivery Pending Farmer Confirmation",
   delivered: "Delivered",
   cancelled: "Cancelled",
 };
@@ -57,3 +63,8 @@ export const LOGISTICS_TIMELINE_STEPS: LogisticsStatus[] = [
   "in_transit",
   "delivered",
 ];
+
+export const LOGISTICS_DELIVERY_STEPS = [
+  "vendor_delivery_pending",
+  "farmer_delivery_pending",
+] as const;

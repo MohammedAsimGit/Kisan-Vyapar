@@ -10,6 +10,11 @@ import {
   ORDER_STATUS_VALUES,
   type OrderStatus,
 } from "@/constants/order-statuses";
+import {
+  PAYMENT_STATUS,
+  PAYMENT_STATUS_VALUES,
+  type PaymentStatus,
+} from "@/constants/payment-status";
 import { MODEL_NAMES } from "./model-names";
 import { locationDefinition } from "./location-definition";
 import type { GeoPoint, PostalAddress } from "@/types/geo";
@@ -43,6 +48,15 @@ export interface Order {
     geo?: GeoPoint;
     address?: PostalAddress;
   };
+  vendorDeliveryConfirmedBy?: Types.ObjectId;
+  vendorDeliveryConfirmedAt?: Date;
+  farmerDeliveryConfirmedBy?: Types.ObjectId;
+  farmerDeliveryConfirmedAt?: Date;
+  deliveryIssueReported?: boolean;
+  deliveryIssueReason?: string;
+  paymentStatus?: PaymentStatus;
+  paymentConfirmedBy?: Types.ObjectId;
+  paymentConfirmedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -119,6 +133,40 @@ const orderSchema = new Schema(
     },
     pickupLocation: locationDefinition,
     deliveryLocation: locationDefinition,
+    vendorDeliveryConfirmedBy: {
+      type: Schema.Types.ObjectId,
+      ref: MODEL_NAMES.USER,
+    },
+    vendorDeliveryConfirmedAt: {
+      type: Date,
+    },
+    farmerDeliveryConfirmedBy: {
+      type: Schema.Types.ObjectId,
+      ref: MODEL_NAMES.USER,
+    },
+    farmerDeliveryConfirmedAt: {
+      type: Date,
+    },
+    deliveryIssueReported: {
+      type: Boolean,
+      default: false,
+    },
+    deliveryIssueReason: {
+      type: String,
+      trim: true,
+      maxlength: 400,
+    },
+    paymentStatus: {
+      type: String,
+      enum: PAYMENT_STATUS_VALUES,
+    },
+    paymentConfirmedBy: {
+      type: Schema.Types.ObjectId,
+      ref: MODEL_NAMES.USER,
+    },
+    paymentConfirmedAt: {
+      type: Date,
+    },
   },
   { timestamps: true },
 );

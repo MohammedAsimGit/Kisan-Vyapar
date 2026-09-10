@@ -6,6 +6,7 @@ import { useParams, notFound } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Banknote,
   CalendarDays,
   CheckCircle2,
   Circle,
@@ -21,12 +22,13 @@ import {
 } from "@/lib/client/api-queries";
 import { kvKeys } from "@/lib/client/query-keys";
 import { DYNAMIC_STALE_TIME } from "@/lib/client/query-client";
-import { postJson } from "@/lib/client/fetch-json";
+import { postJson, ApiRequestError } from "@/lib/client/fetch-json";
 import {
   ScreenError,
   ScreenSkeleton,
 } from "@/components/dashboard/screen-skeleton";
-import { ApiRequestError } from "@/lib/client/fetch-json";
+/* Type definitions are inline below */
+
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                       */
@@ -54,6 +56,13 @@ interface OrderData {
     address?: { line?: string; village?: string; district?: string; state?: string };
   };
   createdAt?: string;
+  vendorDeliveryConfirmedAt?: string;
+  farmerDeliveryConfirmedAt?: string;
+  deliveryIssueReported?: boolean;
+  deliveryIssueReason?: string;
+  paymentStatus?: "pending" | "confirmed";
+  paymentConfirmedAt?: string;
+  updatedAt?: string;
 }
 
 interface LogisticsItem {
@@ -127,13 +136,7 @@ function addressLine(addr?: { line?: string; village?: string; district?: string
   return parts.length > 0 ? parts.join(", ") : "Address not set";
 }
 
-function LocationSummary({
-  label,
-  address,
-}: {
-  label?: string;
-  address?: { line?: string; village?: string; district?: string; state?: string };
-}) {
+function LocationSummary({ label, address }: { label?: string; address?: { line?: string; village?: string; district?: string; state?: string } }) {
   return (
     <div className="flex items-start gap-2">
       <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
@@ -146,7 +149,60 @@ function LocationSummary({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Logistics Timeline                                                         */
+/* Vendor Order Status Timeline                                               */
+/* -------------------------------------------------------------------------- */
+
+function VendorOrderStatusTimeline({ order }: { order: OrderData }) {
+  const status = order.status as string;
+
+  const steps = [
+    { key: "confirmed", label: "Order Confirmed", icon: CheckCircle2 },
+    { key: "in_transit", label: "In Transit", icon: Truck },
+    { key: "vendor_confirmed_delivery", label: "Vendor Confirmed Delivery", icon: CheckCircle2 },
+    { key: "farmer_confirmed_delivery", label: "Awaiting Farmer Confirmation", icon: Loader2 },
+    { key: "payment_pending", label: "Payment Pending", icon: Banknote },
+    { key: "payment_confirmed", label: "Payment Confirmed", icon: CheckCircle2 },
+    { key: "completed", label: "Completed", icon: CheckCircle2 },
+  ];
+
+  return (
+    <div className="space-y-1">
+      {steps.map((step) => {
+        const isReached =
+          ["confirmed", "in_transit", "vendor_confirmed_delivery", "farmer_confirmed_delivery", "payment_pending", "payment_confirmed", "completed"].indexOf(status) >
+          ["confirmed", "in_transit", "vendor_confirmed_delivery", "farmer_confirmed_delivery", "payment_pending", "payment_confirmed", "completed"].indexOf(step.key);
+        const isCurrent = status === step.key;
+        const Icon = step.icon;
+        const iconClass = isReached
+          ? "text-emerald-500"
+          : isCurrent
+            ? "text-primary animate-pulse"
+            : "text-muted-foreground/40";
+
+        return (
+          <div key={step.key} className="flex items-center gap-3">
+            <Icon className={`size-5 shrink-0 ${iconClass}`} />
+            <div>
+              <p className={`text-sm font-medium ${
+                isReached || isCurrent ? "text-foreground" : "text-muted-foreground"
+              }`}>
+                {step.label}
+              </p>
+              {isReached && (
+                <p className="text-xs text-muted-foreground">
+                  {isCurrent ? order.updatedAt ? formatDateTime(order.updatedAt) : "" : ""}
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Logistics Tracking Timeline                                                 */
 /* -------------------------------------------------------------------------- */
 
 function LogisticsTimeline({ logistics }: { logistics: LogisticsItem }) {
@@ -166,6 +222,7 @@ function LogisticsTimeline({ logistics }: { logistics: LogisticsItem }) {
 
         return (
           <div key={step.status} className="flex gap-3">
+            {/* Vertical line + icon */}
             <div className="flex flex-col items-center">
               <Icon className={`size-5 shrink-0 ${iconClass}`} />
               {i < logistics.timeline.length - 1 && (
@@ -176,10 +233,13 @@ function LogisticsTimeline({ logistics }: { logistics: LogisticsItem }) {
                 />
               )}
             </div>
+            {/* Label */}
             <div className="pb-4">
               <p
                 className={`text-sm font-medium ${
-                  step.reached || step.current ? "text-foreground" : "text-muted-foreground"
+                  step.reached || step.current
+                    ? "text-foreground"
+                    : "text-muted-foreground"
                 }`}
               >
                 {step.label}
@@ -252,10 +312,7 @@ function CreateLogisticsForm({
 
       <div className="mt-4 space-y-4">
         <div>
-          <label
-            htmlFor="vehicleType"
-            className="block text-sm font-medium text-foreground"
-          >
+          <label htmlFor="vehicleType" className="block text-sm font-medium text-foreground">
             Vehicle type
           </label>
           <select
@@ -274,10 +331,7 @@ function CreateLogisticsForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label
-              htmlFor="pickupDate"
-              className="block text-sm font-medium text-foreground"
-            >
+            <label htmlFor="pickupDate" className="block text-sm font-medium text-foreground">
               Pickup date
             </label>
             <input
@@ -289,10 +343,7 @@ function CreateLogisticsForm({
             />
           </div>
           <div>
-            <label
-              htmlFor="deliveryDate"
-              className="block text-sm font-medium text-foreground"
-            >
+            <label htmlFor="deliveryDate" className="block text-sm font-medium text-foreground">
               Expected delivery
             </label>
             <input
@@ -329,6 +380,73 @@ function CreateLogisticsForm({
 }
 
 /* -------------------------------------------------------------------------- */
+/* Vendor Delivery Confirmation Button                                         */
+/* -------------------------------------------------------------------------- */
+
+function VendorDeliveryConfirmButton({ order, onConfirm }: { order: OrderData; onConfirm: () => void }) {
+  const [showDialog, setShowDialog] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  if (order.status !== "in_transit") {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+      <div className="flex items-start gap-3">
+        <Truck className="mt-0.5 size-5 shrink-0 text-primary" />
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">
+            Confirm Delivery
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Confirm that the crop has been delivered to the farmer.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex gap-3">
+        <Button
+          size="lg"
+          onClick={() => setShowDialog(true)}
+          className="flex-1"
+        >
+          Confirm Delivery
+        </Button>
+      </div>
+
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        onClick={() => setShowDialog(false)}
+      >
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <h3 className="text-base font-semibold text-foreground">Confirm Delivery</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Confirm that this crop has been delivered to the farmer?
+          </p>
+          <div className="mt-6 flex gap-3">
+            <Button variant="ghost" className="flex-1" onClick={() => setShowDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              loading={confirmLoading}
+              onClick={async () => {
+                setConfirmLoading(true);
+                setShowDialog(false);
+                onConfirm();
+              }}
+            >
+              Confirm Delivery
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Page                                                                        */
 /* -------------------------------------------------------------------------- */
 
@@ -337,6 +455,7 @@ export default function VendorOrderDetailPage() {
   const orderId = params?.id ?? "";
 
   const session = useSessionUser();
+  const queryClient = useQueryClient();
   const userId = session.data?.id;
 
   const orderQuery = useQuery({
@@ -437,6 +556,23 @@ export default function VendorOrderDetailPage() {
           Created {formatDate(order.createdAt)}
         </div>
       </div>
+
+      {/* Vendor Delivery Confirmation Button */}
+      {order.status !== "cancelled" && order.status === "in_transit" && (
+        <VendorDeliveryConfirmButton
+          order={order}
+          onConfirm={async () => {
+            try {
+              await postJson(`/api/vendor/orders/${order.id}/delivery/confirm`, {});
+              await queryClient.invalidateQueries({ queryKey: kvKeys.vendor(userId ?? "").order(order.id) });
+              void queryClient.invalidateQueries({ queryKey: kvKeys.vendor(userId ?? "").orders(1) });
+              window.location.reload();
+            } catch (err) {
+              // Error shown by the page error boundary
+            }
+          }}
+        />
+      )}
 
       {/* Logistics section */}
       {isCancelled ? (
@@ -551,6 +687,14 @@ export default function VendorOrderDetailPage() {
           orderNumber={order.orderNumber}
           onSuccess={() => void logisticsQuery.refetch()}
         />
+      )}
+
+      {/* Order Status Timeline */}
+      {!isCancelled && (
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-foreground mb-4">Order Status</h3>
+          <VendorOrderStatusTimeline order={order} />
+        </div>
       )}
     </div>
   );

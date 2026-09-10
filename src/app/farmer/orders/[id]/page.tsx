@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useParams, notFound } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   ArrowLeft,
+  Banknote,
   CalendarDays,
   CheckCircle2,
   Circle,
@@ -13,7 +15,7 @@ import {
   MapPin,
   Truck,
 } from "lucide-react";
-import { Button, PageHeader } from "@/components/ui";
+import { Button, PageHeader, Textarea } from "@/components/ui";
 import { useSessionUser } from "@/lib/client/use-session-user";
 import {
   fetchFarmerOrder,
@@ -21,12 +23,13 @@ import {
 } from "@/lib/client/api-queries";
 import { kvKeys } from "@/lib/client/query-keys";
 import { DYNAMIC_STALE_TIME } from "@/lib/client/query-client";
-import { postJson } from "@/lib/client/fetch-json";
+import { postJson, ApiRequestError } from "@/lib/client/fetch-json";
 import {
   ScreenError,
   ScreenSkeleton,
 } from "@/components/dashboard/screen-skeleton";
-import { ApiRequestError } from "@/lib/client/fetch-json";
+/* Type definitions are inline below */
+
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                       */
@@ -54,6 +57,13 @@ interface OrderData {
     address?: { line?: string; village?: string; district?: string; state?: string };
   };
   createdAt?: string;
+  vendorDeliveryConfirmedAt?: string;
+  farmerDeliveryConfirmedAt?: string;
+  deliveryIssueReported?: boolean;
+  deliveryIssueReason?: string;
+  paymentStatus?: "pending" | "confirmed";
+  paymentConfirmedAt?: string;
+  updatedAt?: string;
 }
 
 interface LogisticsItem {
@@ -134,6 +144,205 @@ function LocationSummary({ label, address }: { label?: string; address?: { line?
       <div>
         {label && <p className="text-sm font-medium text-foreground">{label}</p>}
         <p className="text-sm text-muted-foreground">{addressLine(address)}</p>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Delivery Confirmation Card (Farmer)                                        */
+/* -------------------------------------------------------------------------- */
+
+function DeliveryConfirmationCard({
+  order,
+}: {
+  order: OrderData;
+}) {
+  const session = useSessionUser();
+  const queryClient = useQueryClient();
+  const userId = session.data?.id ?? "";
+
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  async function handleConfirm() {
+    setConfirmLoading(true);
+    try {
+      await postJson(`/api/farmer/orders/${order.id}/delivery/confirm`, {});
+      await queryClient.invalidateQueries({ queryKey: kvKeys.farmer(userId).order(order.id) });
+      void queryClient.invalidateQueries({ queryKey: kvKeys.farmer(userId).orders(1) });
+      window.location.reload();
+    } catch (err) {
+      // Error shown by the page error boundary
+    }
+  }
+
+  async function handleReportIssue(reason: string) {
+    setConfirmLoading(true);
+    try {
+      await postJson(`/api/farmer/orders/${order.id}/delivery/report`, { reason });
+      await queryClient.invalidateQueries({ queryKey: kvKeys.farmer(userId).order(order.id) });
+      void queryClient.invalidateQueries({ queryKey: kvKeys.farmer(userId).orders(1) });
+      window.location.reload();
+    } catch (err) {
+      // Error shown by the page error boundary
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-warning-border bg-warning-bg/50 p-5 shadow-card">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-500" />
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">
+            Delivery Confirmation Required
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The buyer has confirmed that your crop has been delivered. Please confirm whether you received the crop successfully.
+          </p>
+
+          {order.deliveryIssueReported && (
+            <div className="mt-3 rounded-xl bg-danger-bg/50 border border-danger-border p-3">
+              <p className="text-sm font-medium text-danger-fg">Delivery Issue Reported</p>
+              <p className="mt-1 text-xs text-muted-foreground">{order.deliveryIssueReason}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button
+          size="lg"
+          onClick={() => setShowConfirmDialog(true)}
+          className="flex-1"
+        >
+          Yes, Delivery Completed
+        </Button>
+        <Button
+          variant="outline"
+          disabled={order.deliveryIssueReported}
+          onClick={() => {
+            if (order.deliveryIssueReported) return;
+            const reason = window.prompt("Describe the issue so the buyer is aware.");
+            if (reason && reason.length >= 10) {
+              handleReportIssue(reason);
+            }
+          }}
+          className="flex-1"
+        >
+          Report an Issue
+        </Button>
+      </div>
+
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        onClick={() => setShowConfirmDialog(false)}
+      >
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <h3 className="text-base font-semibold text-foreground">Confirm Delivery</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Have you received the crop successfully?
+          </p>
+          <div className="mt-6 flex gap-3">
+            <Button variant="ghost" className="flex-1" onClick={() => setShowConfirmDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              loading={confirmLoading}
+              onClick={handleConfirm}
+            >
+              Confirm Delivery
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Payment Confirmation Card (Farmer)                                         */
+/* -------------------------------------------------------------------------- */
+
+function PaymentConfirmationCard({
+  order,
+  onConfirmPayment,
+  onNotYetReceived,
+}: {
+  order: OrderData;
+  onConfirmPayment: () => void;
+  onNotYetReceived: () => void;
+}) {
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  if (order.status !== "payment_pending") {
+    return null;
+  }
+
+  const agreedAmount = order.totalValue;
+  const currency = order.currency ?? "INR";
+
+  return (
+    <div className="rounded-2xl border border-success-border bg-success-bg/50 p-5 shadow-card">
+      <div className="flex items-start gap-3">
+        <Banknote className="mt-0.5 size-5 shrink-0 text-emerald-500" />
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">
+            Payment Confirmation
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Your delivery has been confirmed. Have you received the agreed payment from the buyer?
+          </p>
+          <div className="mt-3 rounded-xl bg-muted/50 p-3">
+            <p className="text-xs text-muted-foreground">Agreed Amount</p>
+            <p className="text-xl font-semibold text-foreground">
+              {new Intl.NumberFormat("en-IN", {
+                style: "currency",
+                currency,
+                maximumFractionDigits: 0,
+              }).format(agreedAmount)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Button size="lg" onClick={() => setShowConfirmDialog(true)} className="flex-1">
+          Yes, Payment Received
+        </Button>
+        <Button variant="outline" onClick={onNotYetReceived} className="flex-1">
+          Not Yet Received
+        </Button>
+      </div>
+
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+        onClick={() => setShowConfirmDialog(false)}
+      >
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+          <h3 className="text-base font-semibold text-foreground">Confirm Payment Received</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Please confirm that you have received the agreed payment from the buyer.
+          </p>
+          <div className="mt-6 flex gap-3">
+            <Button variant="ghost" className="flex-1" onClick={() => setShowConfirmDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              loading={confirmLoading}
+              onClick={async () => {
+                setConfirmLoading(true);
+                setShowConfirmDialog(false);
+                onConfirmPayment();
+              }}
+            >
+              Confirm Payment Received
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -326,6 +535,7 @@ export default function FarmerOrderDetailPage() {
   const orderId = params?.id ?? "";
 
   const session = useSessionUser();
+  const queryClient = useQueryClient();
   const userId = session.data?.id;
 
   const orderQuery = useQuery({
@@ -539,6 +749,35 @@ export default function FarmerOrderDetailPage() {
           orderId={order.id}
           orderNumber={order.orderNumber}
           onSuccess={() => void logisticsQuery.refetch()}
+        />
+      )}
+
+      {/* Delivery Confirmation Card */}
+      {order.status !== "cancelled" && order.status === "vendor_confirmed_delivery" && (
+        <DeliveryConfirmationCard order={order} />
+      )}
+
+      {/* Payment Confirmation Card */}
+      {order.status !== "cancelled" && order.status === "payment_pending" && (
+        <PaymentConfirmationCard
+          order={order}
+          onConfirmPayment={async () => {
+            try {
+              await postJson(`/api/farmer/orders/${order.id}/payment/confirm`, {});
+              await queryClient.invalidateQueries({ queryKey: kvKeys.farmer(userId ?? "").order(order.id) });
+              void queryClient.invalidateQueries({ queryKey: kvKeys.farmer(userId ?? "").orders(1) });
+              window.location.reload();
+            } catch (err) {
+              // Error shown by the page error boundary
+            }
+          }}
+          onNotYetReceived={async () => {
+            try {
+              await postJson(`/api/farmer/orders/${order.id}/payment/confirm`, {});
+            } catch (err) {
+              // Error shown by the page error boundary
+            }
+          }}
         />
       )}
     </div>

@@ -649,18 +649,29 @@ export async function transitionLogisticsStatus(
     );
   }
 
-  // If delivered, update order status
-  if (targetStatus === LOGISTICS_STATUS.DELIVERED) {
-    await OrderModel.findOneAndUpdate(
-      { _id: doc.orderId, status: ORDER_STATUS.IN_TRANSIT },
-      { $set: { status: ORDER_STATUS.DELIVERED } },
-    );
-  }
-  // If picked up, move order to in_transit
+  // Sync order status with logistics transitions
   if (targetStatus === LOGISTICS_STATUS.PICKED_UP) {
     await OrderModel.findOneAndUpdate(
       { _id: doc.orderId, status: ORDER_STATUS.CONFIRMED },
       { $set: { status: ORDER_STATUS.IN_TRANSIT } },
+    );
+  }
+  if (targetStatus === LOGISTICS_STATUS.VENDOR_DELIVERY_PENDING) {
+    await OrderModel.findOneAndUpdate(
+      { _id: doc.orderId, status: ORDER_STATUS.IN_TRANSIT },
+      { $set: { status: ORDER_STATUS.VENDOR_CONFIRMED_DELIVERY } },
+    );
+  }
+  if (targetStatus === LOGISTICS_STATUS.FARMER_DELIVERY_PENDING) {
+    await OrderModel.findOneAndUpdate(
+      { _id: doc.orderId, status: ORDER_STATUS.VENDOR_CONFIRMED_DELIVERY },
+      { $set: { status: ORDER_STATUS.FARMER_CONFIRMED_DELIVERY } },
+    );
+  }
+  if (targetStatus === LOGISTICS_STATUS.DELIVERED) {
+    await OrderModel.findOneAndUpdate(
+      { _id: doc.orderId, status: { $in: [ORDER_STATUS.FARMER_CONFIRMED_DELIVERY, ORDER_STATUS.VENDOR_CONFIRMED_DELIVERY] } },
+      { $set: { status: ORDER_STATUS.DELIVERED } },
     );
   }
 
@@ -669,6 +680,8 @@ export async function transitionLogisticsStatus(
     scheduled: { type: "logistics_scheduled", title: "Transport Scheduled", message: "Transport has been scheduled for your order." },
     picked_up: { type: "in_transit", title: "Picked Up", message: "Produce has been picked up and is on its way." },
     in_transit: { type: "in_transit", title: "In Transit", message: "Your shipment is in transit." },
+    vendor_delivery_pending: { type: "vendor_delivery_confirmed", title: "Delivery Confirmed by Buyer", message: "The buyer has confirmed delivery of your crop. Please confirm receipt." },
+    farmer_delivery_pending: { type: "farmer_delivery_confirmed", title: "Delivery Confirmed", message: "The farmer has confirmed successful delivery." },
     delivered: { type: "delivered", title: "Delivered", message: "Your order has been delivered." },
   };
   const notification = LOGISTICS_NOTIFICATIONS[targetStatus];

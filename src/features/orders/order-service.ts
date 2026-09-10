@@ -13,6 +13,8 @@ import {
 import type { Order } from "@/models/order";
 import {
   ORDER_STATUS,
+  ORDER_STATUS_LABELS,
+  canTransitionOrder,
   type OrderStatus,
 } from "@/constants/order-statuses";
 import type { MeasurementUnit } from "@/constants/measurement-units";
@@ -22,6 +24,10 @@ import type { GeoPoint, PostalAddress } from "@/types/geo";
 import { z } from "zod";
 import type { QualityGrade } from "@/constants/quality-grades";
 import type { Currency } from "@/constants/currencies";
+import {
+  PAYMENT_STATUS,
+  type PaymentStatus,
+} from "@/constants/payment-status";
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                       */
@@ -455,3 +461,234 @@ export async function createOrderFromNegotiation(
 
   return buildOrderView(order);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Delivery Confirmation                                                        */
+/* -------------------------------------------------------------------------- */
+
+export async function confirmVendorDelivery(
+  actor: OrderActor,
+  orderId: string,
+): Promise<OrderView> {
+  await connectToDatabase();
+  const doc = await findOwnedOrder(actor, orderId);
+  if (!doc) {
+    throw new NotFoundError("Order not found.");
+  }
+
+  if (actor.role !== "vendor") {
+    throw new ConflictError("Only the vendor can confirm delivery.");
+  }
+
+  const currentStatus = doc.status as OrderStatus;
+  if (!canTransitionOrder(currentStatus, ORDER_STATUS.VENDOR_CONFIRMED_DELIVERY)) {
+    throw new ConflictError(
+      `Cannot confirm delivery from ${ORDER_STATUS_LABELS[currentStatus]} status.`,
+    );
+  }
+
+  const updated = await OrderModel.findOneAndUpdate(
+    { _id: doc._id, status: doc.status },
+    {
+      $set: {
+        status: ORDER_STATUS.VENDOR_CONFIRMED_DELIVERY,
+        vendorDeliveryConfirmedBy: actor.profileId,
+        vendorDeliveryConfirmedAt: new Date(),
+      },
+    },
+    { new: true },
+  ).lean();
+  if (!updated) {
+    throw new ConflictError(
+      "Order status changed while confirming delivery. Please refresh.",
+    );
+  }
+  return buildOrderView(updated);
+}
+
+export async function confirmFarmerDelivery(
+  actor: OrderActor,
+  orderId: string,
+): Promise<OrderView> {
+  await connectToDatabase();
+  const doc = await findOwnedOrder(actor, orderId);
+  if (!doc) {
+    throw new NotFoundError("Order not found.");
+  }
+
+  if (actor.role !== "farmer") {
+    throw new ConflictError("Only the farmer can confirm delivery.");
+  }
+
+  const currentStatus = doc.status as OrderStatus;
+  if (currentStatus !== ORDER_STATUS.VENDOR_CONFIRMED_DELIVERY) {
+    throw new ConflictError(
+      `Can only confirm delivery after vendor confirmation. Current status: ${ORDER_STATUS_LABELS[currentStatus]}.`,
+    );
+  }
+
+  if (doc.farmerDeliveryConfirmedBy) {
+    throw new ConflictError("Delivery has already been confirmed by the farmer.");
+  }
+
+  const updated = await OrderModel.findOneAndUpdate(
+    { _id: doc._id, status: ORDER_STATUS.VENDOR_CONFIRMED_DELIVERY },
+    {
+      $set: {
+        status: ORDER_STATUS.FARMER_CONFIRMED_DELIVERY,
+        farmerDeliveryConfirmedBy: actor.profileId,
+        farmerDeliveryConfirmedAt: new Date(),
+      },
+    },
+    { new: true },
+  ).lean();
+  if (!updated) {
+    throw new ConflictError(
+      "Order status changed while confirming delivery. Please refresh.",
+    );
+  }
+  return buildOrderView(updated);
+}
+
+export async function reportDeliveryIssue(
+  actor: OrderActor,
+  orderId: string,
+  reason: string,
+): Promise<OrderView> {
+  await connectToDatabase();
+  const doc = await findOwnedOrder(actor, orderId);
+  if (!doc) {
+    throw new NotFoundError("Order not found.");
+  }
+
+  if (actor.role !== "farmer") {
+    throw new ConflictError("Only the farmer can report a delivery issue.");
+  }
+
+  const currentStatus = doc.status as OrderStatus;
+  if (currentStatus !== ORDER_STATUS.VENDOR_CONFIRMED_DELIVERY) {
+    throw new ConflictError(
+      `Can only report delivery issue after vendor confirms delivery. Current status: ${ORDER_STATUS_LABELS[currentStatus]}.`,
+    );
+  }
+
+  if (doc.farmerDeliveryConfirmedBy) {
+    throw new ConflictError("Delivery has already been confirmed by the farmer.");
+  }
+
+  const updated = await OrderModel.findOneAndUpdate(
+    { _id: doc._id, status: ORDER_STATUS.VENDOR_CONFIRMED_DELIVERY },
+    {
+      $set: {
+        status: ORDER_STATUS.FARMER_CONFIRMED_DELIVERY,
+        deliveryIssueReported: true,
+        deliveryIssueReason: reason,
+      },
+    },
+    { new: true },
+  ).lean();
+  if (!updated) {
+    throw new ConflictError(
+      "Order status changed while reporting the issue. Please refresh.",
+    );
+  }
+  return buildOrderView(updated);
+}
+
+export async function confirmFarmerPayment(
+  actor: OrderActor,
+  orderId: string,
+): Promise<OrderView> {
+  await connectToDatabase();
+  const doc = await findOwnedOrder(actor, orderId);
+  if (!doc) {
+    throw new NotFoundError("Order not found.");
+  }
+
+  if (actor.role !== "farmer") {
+    throw new ConflictError("Only the farmer can confirm payment.");
+  }
+
+  const currentStatus = doc.status as OrderStatus;
+  if (currentStatus !== ORDER_STATUS.PAYMENT_PENDING) {
+    throw new ConflictError(
+      `Payment confirmation is not available. Current status: ${ORDER_STATUS_LABELS[currentStatus]}.`,
+    );
+  }
+
+  if (!doc.farmerDeliveryConfirmedBy) {
+    throw new ConflictError(
+      "Delivery must be confirmed before payment can be confirmed.",
+    );
+  }
+
+  if (doc.paymentConfirmedBy) {
+    throw new ConflictError("Payment has already been confirmed.");
+  }
+
+  const updated = await OrderModel.findOneAndUpdate(
+    { _id: doc._id, status: ORDER_STATUS.PAYMENT_PENDING },
+    {
+      $set: {
+        status: ORDER_STATUS.PAYMENT_CONFIRMED,
+        paymentStatus: PAYMENT_STATUS.CONFIRMED,
+        paymentConfirmedBy: actor.profileId,
+        paymentConfirmedAt: new Date(),
+      },
+    },
+    { new: true },
+  ).lean();
+  if (!updated) {
+    throw new ConflictError(
+      "Order status changed while confirming payment. Please refresh.",
+    );
+  }
+  return buildOrderView(updated);
+}
+
+/* -------------------------------------------------------------------------- */
+/* POST-delivery state transitions                                              */
+/* -------------------------------------------------------------------------- */
+
+export async function markPaymentPending(
+  orderId: string,
+): Promise<OrderView> {
+  await connectToDatabase();
+  const order = await OrderModel.findById(orderId).lean();
+  if (!order) {
+    throw new NotFoundError("Order not found.");
+  }
+
+  const currentStatus = order.status as OrderStatus;
+  if (currentStatus !== ORDER_STATUS.FARMER_CONFIRMED_DELIVERY) {
+    throw new ConflictError(
+      `Cannot set payment pending from ${ORDER_STATUS_LABELS[currentStatus]}.`,
+    );
+  }
+
+  const updated = await OrderModel.findOneAndUpdate(
+    { _id: order._id, status: ORDER_STATUS.FARMER_CONFIRMED_DELIVERY },
+    {
+      $set: {
+        status: ORDER_STATUS.PAYMENT_PENDING,
+        paymentStatus: PAYMENT_STATUS.PENDING,
+      },
+    },
+    { new: true },
+  ).lean();
+  if (!updated) {
+    throw new ConflictError(
+      "Order status changed while marking payment pending. Please refresh.",
+    );
+  }
+  return buildOrderView(updated as Order & { _id: Types.ObjectId });
+}
+
+/* ========================================================================
+ * Payment handling note
+ * ========================================================================
+ * Kisan Vyapar does NOT process, hold, transfer, or verify bank/UPI payments.
+ * Payment is handled externally between farmer and vendor.
+ * The payment confirmation here only records the farmer's confirmation that
+ * payment was received. It does NOT verify or guarantee the actual payment.
+ * ======================================================================== */

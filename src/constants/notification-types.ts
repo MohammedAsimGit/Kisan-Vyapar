@@ -14,6 +14,10 @@ export const NOTIFICATION_TYPE = {
   PICKUP_SCHEDULED: "pickup_scheduled",
   IN_TRANSIT: "in_transit",
   DELIVERED: "delivered",
+  VENDOR_DELIVERY_CONFIRMED: "vendor_delivery_confirmed",
+  FARMER_DELIVERY_CONFIRMED: "farmer_delivery_confirmed",
+  PAYMENT_CONFIRMED: "payment_confirmed",
+  PAYMENT_PENDING: "payment_pending",
 
   REQUIREMENT_MATCH: "requirement_match",
   REQUIREMENT_EXPIRING: "requirement_expiring",
@@ -42,6 +46,11 @@ export const NOTIFICATION_META: Record<
   pickup_scheduled: { label: "Pickup Scheduled", icon: "📍" },
   in_transit: { label: "In Transit", icon: "🚚" },
   delivered: { label: "Delivered", icon: "✅" },
+  vendor_delivery_confirmed: { label: "Delivery Confirmed by Buyer", icon: "📦" },
+  farmer_delivery_confirmed: { label: "Delivery Confirmed", icon: "✅" },
+  payment_confirmed: { label: "Payment Confirmed", icon: "💰" },
+  payment_pending: { label: "Payment Pending", icon: "💳" },
+
   requirement_match: { label: "New Farmer Match", icon: "🌾" },
   requirement_expiring: { label: "Requirement Expiring", icon: "⏰" },
 };
