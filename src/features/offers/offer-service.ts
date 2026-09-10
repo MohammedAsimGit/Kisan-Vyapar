@@ -48,6 +48,8 @@ const UNIT_LABELS: Record<MeasurementUnit, string> = {
 export interface OfferActor {
   role: "farmer" | "vendor";
   profileId: string;
+  /** The User model _id — used for orderInitiatorId so the client can compare. */
+  userId?: string;
 }
 
 export type OfferAction = "accept" | "reject" | "counter" | "withdraw";
@@ -181,6 +183,10 @@ interface LeanOfferDoc {
   currency?: string;
   totalAmount: number;
   status: OfferStatus;
+  acceptedBy?: Types.ObjectId;
+  acceptedAt?: Date;
+  orderInitiatorId?: Types.ObjectId;
+  orderInitiatorRole?: OfferParty;
   history?: Array<{
     party: OfferParty;
     action: OfferHistoryAction;
@@ -774,6 +780,9 @@ export async function acceptOffer(
   actor: OfferActor,
   offerId: string,
 ): Promise<OfferView | null> {
+  if (!actor.userId) {
+    throw new ConflictError("User ID is required to accept an offer.");
+  }
   const doc = await findOwnedOffer(actor, offerId);
   if (!doc) {
     return null;
@@ -872,7 +881,7 @@ export async function acceptOffer(
         status: ACCEPTED,
         acceptedBy: actor.profileId,
         acceptedAt: new Date(),
-        orderInitiatorId: actor.profileId,
+        orderInitiatorId: actor.userId,
         orderInitiatorRole: actor.role,
       },
       $push: {

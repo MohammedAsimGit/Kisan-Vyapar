@@ -30,6 +30,8 @@ import type { Currency } from "@/constants/currencies";
 export interface OrderActor {
   role: "farmer" | "vendor";
   profileId: string;
+  /** The User model _id — compared against offer.orderInitiatorId. */
+  userId?: string;
 }
 
 export interface OrderView {
@@ -411,9 +413,9 @@ export async function createOrderFromNegotiation(
     throw new ConflictError("Order initiation information is unavailable for this negotiation.");
   }
 
-  // Only the order initiator can create the order
+  // Only the order initiator can create the order (compare User IDs)
   const initiatorId = String(offer.orderInitiatorId);
-  if (actor.profileId !== initiatorId) {
+  if (!actor.userId || actor.userId !== initiatorId) {
     throw new ConflictError("Only the user who accepted the offer can create the order.");
   }
 

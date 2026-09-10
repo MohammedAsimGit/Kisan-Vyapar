@@ -21,7 +21,7 @@ export async function POST(_request: NextRequest, context: RouteContext): Promis
     }
 
     const offer = await acceptOffer(
-      { role: "vendor", profileId: vendorProfileId },
+      { role: "vendor", profileId: vendorProfileId, userId: user.id },
       id,
     );
     if (!offer) {

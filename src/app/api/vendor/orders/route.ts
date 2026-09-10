@@ -30,7 +30,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const body = await readJsonBody(request);
     const { offerId } = createOrderSchema.parse(body);
     const order = await createOrderFromNegotiation(
-      { role: "vendor", profileId: vendorProfileId },
+      { role: "vendor", profileId: vendorProfileId, userId: user.id },
       offerId,
     );
     return ok(order);

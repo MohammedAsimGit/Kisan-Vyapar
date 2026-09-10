@@ -21,7 +21,7 @@ export async function POST(_request: NextRequest, context: RouteContext): Promis
     }
 
     const offer = await rejectOffer(
-      { role: "farmer", profileId: farmerProfileId },
+      { role: "farmer", profileId: farmerProfileId, userId: user.id },
       id,
     );
     if (!offer) {

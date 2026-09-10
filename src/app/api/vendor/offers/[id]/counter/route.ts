@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
 
     const body = await readJsonBody(request);
     const offer = await counterOffer(
-      { role: "vendor", profileId: vendorProfileId },
+      { role: "vendor", profileId: vendorProfileId, userId: user.id },
       id,
       body,
     );
