@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, notFound } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   ArrowLeft,
   Banknote,
   CalendarDays,
@@ -694,6 +695,82 @@ export default function VendorOrderDetailPage() {
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <h3 className="text-sm font-semibold text-foreground mb-4">Order Status</h3>
           <VendorOrderStatusTimeline order={order} />
+        </div>
+      )}
+
+      {/* Awaiting Farmer Confirmation state */}
+      {order.status === "farmer_confirmed_delivery" && !order.deliveryIssueReported && (
+        <div className="rounded-2xl border border-warning-border bg-warning-bg/50 p-5 shadow-card">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-500" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Awaiting Farmer Confirmation
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                You have confirmed delivery. The farmer must now independently confirm they received the crop before payment can be confirmed.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delivery Issue Reported state */}
+      {order.deliveryIssueReported && order.status === "farmer_confirmed_delivery" && (
+        <div className="rounded-2xl border border-danger-border bg-danger-bg/50 p-5 shadow-card">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-500" />
+            <div>
+              <h3 className="text-sm font-semibold text-danger-fg">
+                Delivery Issue Reported
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The farmer reported an issue with the delivery.
+              </p>
+              {order.deliveryIssueReason && (
+                <p className="mt-2 text-sm text-foreground">{order.deliveryIssueReason}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Pending state */}
+      {order.status === "payment_pending" && (
+        <div className="rounded-2xl border border-info-border bg-info-bg/50 p-5 shadow-card">
+          <div className="flex items-start gap-3">
+            <Banknote className="mt-0.5 size-5 shrink-0 text-blue-500" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Payment Pending
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The farmer has confirmed delivery. Payment confirmation is now available to the farmer.
+              </p>
+              {order.paymentStatus === "confirmed" && (
+                <p className="mt-2 text-sm text-emerald-600">
+                  Payment has been confirmed by the farmer.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Completed state */}
+      {order.status === "completed" && (
+        <div className="rounded-2xl border border-success-border bg-success-bg/50 p-5 shadow-card">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-500" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Order Completed
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Delivery and payment have both been confirmed. The order is complete.
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>
