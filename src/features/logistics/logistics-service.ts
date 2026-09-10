@@ -20,7 +20,7 @@ import {
 } from "@/constants/logistics-statuses";
 import { ORDER_STATUS } from "@/constants/order-statuses";
 import type { MeasurementUnit } from "@/constants/measurement-units";
-import { ConflictError, NotFoundError } from "@/lib/errors";
+import { ConflictError, NotFoundError, AuthorizationError } from "@/lib/errors";
 import { createNotification } from "@/features/notifications/notification-service";
 import { type NotificationType } from "@/constants/notification-types";
 import { parseOrThrow } from "@/lib/validation";
@@ -401,12 +401,19 @@ async function findLogisticsByOrder(
 
 /**
  * Creates a logistics record from a confirmed order.
- * Pickup/delivery locations are inherited from the order's produce/requirement.
+ * Only farmers can create logistics — the farmer arranges transportation.
+ * Vendor can only view (read-only).
  */
 export async function createLogistics(
   actor: LogisticsActor,
   input: unknown,
 ): Promise<LogisticsView> {
+  if (actor.role !== "farmer") {
+    throw new AuthorizationError(
+      "Only the farmer can arrange transportation. Vendors can view transportation details but cannot create or edit them.",
+    );
+  }
+
   const validated = parseOrThrow(createLogisticsSchema, input);
   await connectToDatabase();
 
@@ -418,8 +425,7 @@ export async function createLogistics(
   const order = orderDoc;
 
   const isFarmer = actor.role === "farmer" && String(order.seller) === actor.profileId;
-  const isVendor = actor.role === "vendor" && String(order.buyer) === actor.profileId;
-  if (!isFarmer && !isVendor) {
+  if (!isFarmer) {
     throw new ConflictError("You are not a party to this order.");
   }
 
@@ -554,11 +560,22 @@ export async function listVendorLogistics(
 /* Updates                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Updates a logistics record.
+ * Only farmers can update — the farmer manages transportation.
+ * Vendor can only view (read-only).
+ */
 export async function updateLogistics(
   actor: LogisticsActor,
   logisticsId: string,
   input: unknown,
 ): Promise<LogisticsView> {
+  if (actor.role !== "vendor") {
+    throw new AuthorizationError(
+      "Only the farmer can update transportation details. Vendors can view but cannot edit.",
+    );
+  }
+
   const validated = parseOrThrow(updateLogisticsSchema, input);
   const doc = await findOwnedLogistics(actor, logisticsId);
   if (!doc) {
@@ -609,11 +626,22 @@ export async function updateLogistics(
   return buildLogisticsView(updated);
 }
 
+/**
+ * Transitions logistics status.
+ * Only farmers can transition logistics status.
+ * Vendor can only view.
+ */
 export async function transitionLogisticsStatus(
   actor: LogisticsActor,
   logisticsId: string,
   input: unknown,
 ): Promise<LogisticsView> {
+  if (actor.role === "vendor") {
+    throw new AuthorizationError(
+      "Vendors cannot transition logistics status. Only farmers can manage transportation status.",
+    );
+  }
+
   const validated = parseOrThrow(transitionLogisticsSchema, input);
   const doc = await findOwnedLogistics(actor, logisticsId);
   if (!doc) {
@@ -707,6 +735,12 @@ export async function cancelLogistics(
   actor: LogisticsActor,
   logisticsId: string,
 ): Promise<LogisticsView> {
+  if (actor.role === "vendor") {
+    throw new AuthorizationError(
+      "Vendors cannot cancel logistics. Only farmers can manage transportation.",
+    );
+  }
+
   const doc = await findOwnedLogistics(actor, logisticsId);
   if (!doc) {
     throw new NotFoundError("Logistics record not found.");

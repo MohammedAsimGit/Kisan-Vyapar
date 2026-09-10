@@ -28,8 +28,6 @@ import {
   ScreenError,
   ScreenSkeleton,
 } from "@/components/dashboard/screen-skeleton";
-/* Type definitions are inline below */
-
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                       */
@@ -264,123 +262,6 @@ function LogisticsTimeline({ logistics }: { logistics: LogisticsItem }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Create Logistics Form                                                       */
-/* -------------------------------------------------------------------------- */
-
-function CreateLogisticsForm({
-  orderId,
-  orderNumber,
-  onSuccess,
-}: {
-  orderId: string;
-  orderNumber: string;
-  onSuccess: () => void;
-}) {
-  const session = useSessionUser();
-  const queryClient = useQueryClient();
-  const userId = session.data?.id ?? "";
-
-  const [vehicleType, setVehicleType] = useState("medium_truck");
-  const [pickupDate, setPickupDate] = useState("");
-  const [deliveryDate, setDeliveryDate] = useState("");
-
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      return postJson<{ logistics: LogisticsItem }>("/api/vendor/logistics", {
-        orderId,
-        vehicleType,
-        pickupScheduledAt: pickupDate ? new Date(pickupDate).toISOString() : undefined,
-        estimatedDeliveryAt: deliveryDate ? new Date(deliveryDate).toISOString() : undefined,
-      });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: kvKeys.vendor(userId).orders(1),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: kvKeys.vendor(userId).logistics(1),
-      });
-      onSuccess();
-    },
-  });
-
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-      <h3 className="text-sm font-semibold text-foreground">Arrange Transport</h3>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Order {orderNumber} — Create a logistics record to schedule pickup and delivery.
-      </p>
-
-      <div className="mt-4 space-y-4">
-        <div>
-          <label htmlFor="vehicleType" className="block text-sm font-medium text-foreground">
-            Vehicle type
-          </label>
-          <select
-            id="vehicleType"
-            value={vehicleType}
-            onChange={(e) => setVehicleType(e.target.value)}
-            className="mt-1 block w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="tempo">Tempo</option>
-            <option value="mini_truck">Mini Truck</option>
-            <option value="medium_truck">Medium Truck</option>
-            <option value="large_truck">Large Truck</option>
-            <option value="trailer">Trailer</option>
-          </select>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="pickupDate" className="block text-sm font-medium text-foreground">
-              Pickup date
-            </label>
-            <input
-              id="pickupDate"
-              type="datetime-local"
-              value={pickupDate}
-              onChange={(e) => setPickupDate(e.target.value)}
-              className="mt-1 block w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-          <div>
-            <label htmlFor="deliveryDate" className="block text-sm font-medium text-foreground">
-              Expected delivery
-            </label>
-            <input
-              id="deliveryDate"
-              type="datetime-local"
-              value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
-              className="mt-1 block w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-        </div>
-
-        {createMutation.isError && (
-          <p className="text-sm text-red-600">
-            {(createMutation.error as Error).message || "Failed to create logistics."}
-          </p>
-        )}
-
-        <Button
-          onClick={() => createMutation.mutate()}
-          disabled={createMutation.isPending}
-          className="w-full"
-        >
-          {createMutation.isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Truck className="size-4" />
-          )}
-          Create Logistics Record
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
 /* Vendor Delivery Confirmation Button                                         */
 /* -------------------------------------------------------------------------- */
 
@@ -575,7 +456,7 @@ export default function VendorOrderDetailPage() {
         />
       )}
 
-      {/* Logistics section */}
+      {/* Logistics section — READ ONLY for Vendor */}
       {isCancelled ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface-muted/40 p-6 text-center">
           <p className="text-sm font-medium text-muted-foreground">
@@ -587,7 +468,7 @@ export default function VendorOrderDetailPage() {
           <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <Truck className="size-5 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Logistics</h3>
+              <h3 className="text-sm font-semibold text-foreground">Transportation Information</h3>
               <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                 {logistics.statusLabel}
               </span>
@@ -683,11 +564,18 @@ export default function VendorOrderDetailPage() {
           </div>
         </div>
       ) : (
-        <CreateLogisticsForm
-          orderId={order.id}
-          orderNumber={order.orderNumber}
-          onSuccess={() => void logisticsQuery.refetch()}
-        />
+        /* No logistics yet — show read-only message, NOT an editable form */
+        <div className="rounded-2xl border border-dashed border-border bg-surface-muted/40 p-6">
+          <div className="flex items-start gap-3">
+            <Truck className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Transportation Information</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The farmer has not added transportation details yet. Transportation information will appear here once the farmer arranges the transport.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Order Status Timeline */}
